@@ -10,14 +10,13 @@ from sklearn.metrics import r2_score
 
 BATCH_SIZE = 20
 NUM_CLASSES = 3
-NUM_EPOCHS = 200
+NUM_EPOCHS = 5
 NUM_ROUTING_ITERATIONS = 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
 def softmax(input, dim=1):
     transposed_input = input.transpose(dim, len(input.size()) - 1)
-    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1,
-                                                                    transposed_input.size(-1)), dim=-1)
+    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
 
@@ -32,8 +31,7 @@ def augmentation(x, max_shift=2):
     target_width_slice = slice(max(0, -w_shift), -w_shift + width)
 
     shifted_image = torch.zeros(*x.size())
-    shifted_image[:, :, source_height_slice, source_width_slice] = x[:,
-                                                                     :, target_height_slice, target_width_slice]
+    shifted_image[:, :, source_height_slice, source_width_slice] = x[:, :, target_height_slice, target_width_slice]
     return shifted_image.float()
 
 
@@ -92,11 +90,9 @@ class CapsuleNet(nn.Module):
     def __init__(self):
         super(CapsuleNet, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
-        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
-                                             kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
-                                           out_channels=16)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
+        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
 
         self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
@@ -151,8 +147,8 @@ if __name__ == "__main__":
     capsule_loss = CapsuleLoss()
 
     def get_iterator(mode):
-        X = np.load('../SDSS/Data/61000_SDSS_RGB_ImageData.npy')
-        y = np.load('../SDSS/Data/SDSS_Data_Final_VoteFractions_3Class.npy')
+        X = np.load(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\saved_images.npy")
+        y = np.load(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\savedCSV.npy")
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
@@ -210,7 +206,7 @@ if __name__ == "__main__":
         print('[Epoch %d] Testing Loss: %.4f' % (
             state['epoch'], np.sqrt(meter_loss.value()[0])))
 
-        torch.save(model.state_dict(), '../SDSS/epochs200/epoch_%d.pt' % state['epoch'])
+        torch.save(model.state_dict(), 'C:\\Users\\Anton (Main)\\Desktop\\Uni\\Phys4xx\\!Masters451\\Network\\AlexNetwork\\epochs\\epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -225,6 +221,5 @@ if __name__ == "__main__":
     
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
 
-    np.save("../SDSS/results200/RGBtrain_losses", train_losses)
-    np.save("../SDSS/results200/RGBtest_losses", test_losses)
-
+    np.save(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\losses\RGBtrain_losses", train_losses)
+    np.save(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\losses\RGBtest_losses", test_losses)

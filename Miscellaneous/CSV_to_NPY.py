@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv(r"C:\Users\Anton (Main)\Desktop\!extracted\GZ2T7\zoo2Stripe82Normal.csv")
+df = pd.read_csv(r"C:\Users\Anton (Main)\Desktop\!extracted\imageAnnotations.csv")
 
-X =np.array(df.iloc[0:17787, 1:35])
+X =np.array(df.iloc[:, 1:])
 
 print(X)
 print(X.shape)

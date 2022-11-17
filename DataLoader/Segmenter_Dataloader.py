@@ -63,16 +63,14 @@ class DecalsData(Dataset):
 
 #in main code:
 #'../gz_decals_dr5'
-transformed_dataset = DecalsData(csv_file='../Decals/Data/Decals_Segment_Votes_61576.csv', 
-root_dir='../gz_decals_dr5', 
-transform=transforms.Compose([transforms.ToPILImage(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToTensor()]))
+transformed_dataset = DecalsData(csv_file=r"C:\Users\Anton (Main)\Desktop\!extracted\imageAnnotations.csv", root_dir=r"C:\Users\Anton (Main)\Desktop\!extracted\useSample", transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 
-list=[]
+list = []
 for i in range(len(transformed_dataset)):
     images = transformed_dataset[i]
     npimages = images.numpy()
     list.append(npimages)
     print(i)
-    
-np.save('../Decals/Data/Decals_SegmentedBlurred_ImageData.npy', list)
+
+np.save(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\saved_images", list)

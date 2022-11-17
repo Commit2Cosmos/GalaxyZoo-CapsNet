@@ -1,0 +1,4 @@
+losses*
+epochs
+*.npy
+*test*.py

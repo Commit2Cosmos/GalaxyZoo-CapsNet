@@ -40,7 +40,7 @@ class SDSSData(Dataset):
     def __getitem__(self, index):
         img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
         image1 = io.imread(img_path)
-        labels = torch.tensor(self.annotations.iloc[index, 1:])
+        # labels = torch.tensor(self.annotations.iloc[index, 1:])
 
         if self.transform:
             image = self.transform(image1)
@@ -54,13 +54,14 @@ class SDSSData(Dataset):
 # root_dir='../SDSS/images', 
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
-transformed_dataset = SDSSData(csv_file='../Data/ImageFilePaths.csv', root_dir='../Data/images', transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
+transformed_dataset = SDSSData(csv_file=r"C:\Users\Anton (Main)\Desktop\!extracted\imageAnnotations.csv", root_dir=r"C:\Users\Anton (Main)\Desktop\!extracted\useSample", transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 list = []
 for i in range(len(transformed_dataset)):
     images = transformed_dataset[i]
-    npimages = images.numpy()
+    npimages = np.array(images)
     list.append(npimages)
     print(i)
 
-np.save('../ImageFile/SDSSImageData', list)
+np.save(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\DataLoader", list)
+# print(len(list))
