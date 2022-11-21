@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # array = np.load(r"C:\Users\USER\Documents\____MastersProject\GreenValleyData\KaggleRGBREDUCEPredict.npy", allow_pickle=True)
-array = np.load(r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\losses\RGBtrain_losses.npy", allow_pickle=True)
+array = np.load("./test_files/test_data.npy", allow_pickle=True)
 
 print(array.shape)
 #print(array)
@@ -15,6 +15,6 @@ df = pd.DataFrame(array)
 
 ## save to xlsx file
 
-filepath = (r"C:\Users\Anton (Main)\Desktop\Uni\Phys4xx\!Masters451\Network\AlexNetwork\lossesFile\train_losses.xlsx")
+filepath = ("./test_files/test_data.xlsx")
 
 df.to_excel(filepath, index=False)
