@@ -147,9 +147,9 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load('../DECaLS/Data/Decals_SegmentedBlurred_ImageData.npy')
+        X = np.load('../Data/Decals_SegmentedBlurred_ImageData.npy')
         #Load corresponding labels
-        y = np.load('../DECaLS/Data/Decals_Segmented_Votes_61563.npy')
+        y = np.load('../Data/Decals_Segmented_Votes_61563.npy')
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
