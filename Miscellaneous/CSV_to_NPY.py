@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv('../decals/Decals_Segment_Votes_61563.csv')
+df = pd.read_csv('../Data/paths_votes.csv')
 
-X =np.array(df.iloc[0:61564, 1:35])
+X = np.array(df.iloc[:, 1:])
 
 print(X)
 print(X.shape)
 
-np.save('../decals/Decals_Segmented_Votes_61563.npy', X)
+np.save('../ReadyFile/votes', X)
 
 #print(X[60891])

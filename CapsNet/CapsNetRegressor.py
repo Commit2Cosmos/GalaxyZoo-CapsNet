@@ -8,9 +8,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
 BATCH_SIZE = 5
-NUM_CLASSES = 34 #Ig DECaLS data
+NUM_CLASSES = 2 #Ig DECaLS data
 #NUM_CLASSES = 37 #If SDSS data
-NUM_EPOCHS = 30
+NUM_EPOCHS = 3
 NUM_ROUTING_ITERATIONS = 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -90,7 +90,7 @@ class CapsuleNet(nn.Module):
     def __init__(self):
         super(CapsuleNet, self).__init__()
 
-        #self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
+        # self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
                                              kernel_size=9, stride=2)
@@ -147,9 +147,9 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load('../Data/Decals_SegmentedBlurred_ImageData.npy')
+        X = np.load('/mmfs1/home/users/belov/ReadyFile/images.npy')
         #Load corresponding labels
-        y = np.load('../Data/Decals_Segmented_Votes_61563.npy')
+        y = np.load('/mmfs1/home/users/belov/ReadyFile/votes.npy')
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
@@ -208,7 +208,7 @@ if __name__ == "__main__":
         print('[Epoch %d] Testing Loss: %.4f' % (
             state['epoch'], np.sqrt(meter_loss.value()[0])))
 
-        torch.save(model.state_dict(), '../DECaLS/epochsGray/epoch_%d.pt' % state['epoch'])
+        torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -223,6 +223,6 @@ if __name__ == "__main__":
     
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
 
-    np.save("../DECaLS/Results/DecalsSegment_train_losses", train_losses)
-    np.save("../DECaLS/Results/DecalsSegment_test_losses", test_losses)
+    np.save("/mmfs1/home/users/belov/Results/train_losses", train_losses)
+    np.save("/mmfs1/home/users/belov/Results/test_losses", test_losses)
 
