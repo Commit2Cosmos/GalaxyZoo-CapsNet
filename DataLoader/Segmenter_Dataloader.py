@@ -63,8 +63,8 @@ class DecalsData(Dataset):
 
 #in main code:
 #'../gz_decals_dr5'
-transformed_dataset = DecalsData(csv_file='../Decals/Data/Decals_Segment_Votes_61576.csv', 
-root_dir='../gz_decals_dr5', 
+transformed_dataset = DecalsData(csv_file='../Data/gz2_vote_fractions.csv', 
+root_dir='../Data/images_gz2', 
 transform=transforms.Compose([transforms.ToPILImage(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToTensor()]))
 
 

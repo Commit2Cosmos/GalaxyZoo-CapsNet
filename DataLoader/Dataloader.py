@@ -55,19 +55,18 @@ class SDSSData(Dataset):
 # root_dir='../SDSS/images', 
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
-transformed_dataset = SDSSData(csv_file='../Data/ImageFilePaths.csv', 
-root_dir='../Data/images',
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
+transformed_dataset = SDSSData(csv_file='/mmfs1/home/users/belov/Data/paths_votes.csv', 
+root_dir='/mmfs1/home/users/belov/Data/images_gz2',
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=2), transforms.ToPILImage()]))
 
 list=[]
 for i in range(len(transformed_dataset)):
     images = transformed_dataset[i]
-    npimages = images.numpy()
+    # npimages = images.numpy()
+    npimages = np.array(images)
     list.append(npimages)
     print(i)
 
-np.save('../ImageFile/SDSSImageData', list)
-    
-
-
-
+# list = np.array(list)
+# print(list.size)
+np.save('/mmfs1/home/users/belov/ReadyFile/images', list)
