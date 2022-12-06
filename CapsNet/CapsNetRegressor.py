@@ -24,6 +24,8 @@ def softmax(input, dim=1):
 #This function shifts images by a random integer up to a maximum amount of 2
 #Also slices the image height and width 
 def augmentation(x, max_shift=2):
+    # Need: # images, # color channels, width, height
+    # Get: # images, width, height, # color channels
     _, _, height, width = x.size()
 
     #Defines the shift of at most 2 pixels for the images.
@@ -165,6 +167,20 @@ if __name__ == "__main__":
 
     def processor(sample):
         data, labels, training = sample
+        
+        size_list = list(data.size())
+        # print(size_list)
+
+        # need this cz initially doesn't assign 1 for number of colorchannels if such
+        if len(size_list) != 4:
+            # print('adding 1')
+            data = torch.reshape(data, (size_list[0], size_list[1], size_list[2], 1))
+            size_list = list(data.size())
+            # print(data.size())
+
+        data = torch.reshape(data, (size_list[0], size_list[3], size_list[1], size_list[2]))
+        # print(data.size())
+
 
         #Only include the 255 if the images have not been normalized
         #data = augmentation(data.float())
@@ -208,7 +224,7 @@ if __name__ == "__main__":
         print('[Epoch %d] Testing Loss: %.4f' % (
             state['epoch'], np.sqrt(meter_loss.value()[0])))
 
-        torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
+        torch.save(model.state_dict(), '/mmfs1/home/users/belov/epochs/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
