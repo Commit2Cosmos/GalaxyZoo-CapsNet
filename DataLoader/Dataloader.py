@@ -57,7 +57,7 @@ class SDSSData(Dataset):
 
 transformed_dataset = SDSSData(csv_file='/mmfs1/home/users/belov/Data/paths_votes.csv', 
 root_dir='/mmfs1/home/users/belov/Data/images_gz2',
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=2), transforms.ToPILImage()]))
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 list=[]
 for i in range(len(transformed_dataset)):
