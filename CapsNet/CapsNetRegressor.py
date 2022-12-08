@@ -7,10 +7,10 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 
-BATCH_SIZE = 5
+BATCH_SIZE = 6
 NUM_CLASSES = 2 #Ig DECaLS data
 #NUM_CLASSES = 37 #If SDSS data
-NUM_EPOCHS = 3
+NUM_EPOCHS = 10
 NUM_ROUTING_ITERATIONS = 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -97,7 +97,7 @@ class CapsuleNet(nn.Module):
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
                                              kernel_size=9, stride=2)
         self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
-                                           out_channels=16)
+                                           out_channels=2)
 
         self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
@@ -149,9 +149,11 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load('/mmfs1/home/users/belov/ReadyFile/images.npy')
+        # X = np.load('/mmfs1/home/users/belov/ReadyFile/images.npy')
+        X = np.load('../ReadyFile/images.npy')
         #Load corresponding labels
-        y = np.load('/mmfs1/home/users/belov/ReadyFile/votes.npy')
+        # y = np.load('/mmfs1/home/users/belov/ReadyFile/votes.npy')
+        y = np.load('../ReadyFile/votes.npy')
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
@@ -168,19 +170,23 @@ if __name__ == "__main__":
     def processor(sample):
         data, labels, training = sample
         
-        size_list = list(data.size())
-        # print(size_list)
+        data_list = list(data.size())
+        # print(data_list)
 
         # need this cz initially doesn't assign 1 for number of colorchannels if such
-        if len(size_list) != 4:
+        if len(data_list) != 4:
             # print('adding 1')
-            data = torch.reshape(data, (size_list[0], size_list[1], size_list[2], 1))
-            size_list = list(data.size())
+            data = torch.reshape(data, (data_list[0], data_list[1], data_list[2], 1))
+            data_list = list(data.size())
             # print(data.size())
 
-        data = torch.reshape(data, (size_list[0], size_list[3], size_list[1], size_list[2]))
-        # print(data.size())
+        data = torch.reshape(data, (data_list[0], data_list[3], data_list[1], data_list[2]))
 
+        # labels_list = list(labels.size())
+
+        # if len(labels_list) != 2:
+        #     labels = torch.reshape(labels, (1, labels_list[0]))
+        #     print(labels)
 
         #Only include the 255 if the images have not been normalized
         #data = augmentation(data.float())
@@ -189,6 +195,8 @@ if __name__ == "__main__":
 
         data = Variable(data).cuda()
         labels = Variable(labels).cuda()
+        print(labels.size())
+
 
         if training:
             Output = model(data, labels)
@@ -224,7 +232,8 @@ if __name__ == "__main__":
         print('[Epoch %d] Testing Loss: %.4f' % (
             state['epoch'], np.sqrt(meter_loss.value()[0])))
 
-        torch.save(model.state_dict(), '/mmfs1/home/users/belov/epochs/epoch_%d.pt' % state['epoch'])
+        # torch.save(model.state_dict(), '/mmfs1/home/users/belov/epochs/epoch_%d.pt' % state['epoch'])
+        torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -239,6 +248,8 @@ if __name__ == "__main__":
     
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
 
-    np.save("/mmfs1/home/users/belov/Results/train_losses", train_losses)
-    np.save("/mmfs1/home/users/belov/Results/test_losses", test_losses)
+    # np.save("/mmfs1/home/users/belov/Results/train_losses", train_losses)
+    # np.save("/mmfs1/home/users/belov/Results/test_losses", test_losses)
+    np.save("../Results/train_losses", train_losses)
+    np.save("../Results/test_losses", test_losses)
 
