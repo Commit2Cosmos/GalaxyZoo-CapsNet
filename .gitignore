@@ -1,0 +1,6 @@
+*.npy
+epochs
+*.csv
+*images*
+order.md
+Results
