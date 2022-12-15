@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from skimage import io
 from torchvision import transforms 
-import PIL
+# import PIL
 import numpy as np
 
 
@@ -59,7 +59,7 @@ transformed_dataset = SDSSData(
 # csv_file='/mmfs1/home/users/belov/Data/paths_votes.csv', 
 # root_dir='/mmfs1/home/users/belov/Data/images_gz2',
 csv_file='../Data/paths_votes.csv', 
-root_dir='../Data/images_gz2',
+root_dir='../Data/images_training_rev1',
 transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 list=[]

@@ -1,6 +1,9 @@
-*.npy
+.npy
 epochs
 *.csv
 *images*
 order.md
 Results
+test
+ReadyFile
+*.com

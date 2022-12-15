@@ -5,12 +5,12 @@ import torch.nn.functional as F
 from torch import nn
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score
+# from sklearn.metrics import r2_score
 
 BATCH_SIZE = 6
 NUM_CLASSES = 2 #Ig DECaLS data
 #NUM_CLASSES = 37 #If SDSS data
-NUM_EPOCHS = 10
+NUM_EPOCHS = 1 #30
 NUM_ROUTING_ITERATIONS = 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -99,14 +99,14 @@ class CapsuleNet(nn.Module):
         self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
                                            out_channels=2)
 
-        self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
+        self.Linear = nn.Linear(NUM_CLASSES, NUM_CLASSES)
 
     def forward(self, x, y=None):
         x = F.relu(self.conv1(x), inplace=True)
         x = self.primary_capsules(x)
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
         x = (x ** 2).sum(dim=-1) ** 0.5
-        # x = self.Linear(x.view(x.size(0), -1))
+        x = self.Linear(x.view(x.size(0), -1))
 
         return x
 
@@ -116,7 +116,7 @@ class CapsuleNet(nn.Module):
 class CapsuleLoss(nn.Module):
     def __init__(self):
         super(CapsuleLoss, self).__init__()
-        self.mse = nn.MSELoss(size_average=True)
+        self.mse = nn.MSELoss(reduction='mean')
 
     def forward(self, labels, x):
         return self.mse(x, labels)
@@ -132,14 +132,14 @@ if __name__ == "__main__":
     from torch.autograd import Variable
     from torch.optim import Adam
     from torchnet.engine import Engine
-    from tqdm import tqdm
+    # from tqdm import tqdm
     import torchnet as tnt
 
     model = CapsuleNet()
     # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
     model.cuda()
 
-    print("# parameters:", sum(param.numel() for param in model.parameters()))
+    # print("# parameters:", sum(param.numel() for param in model.parameters()))
 
     optimizer = Adam(model.parameters())
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
         data = Variable(data).cuda()
         labels = Variable(labels).cuda()
-        print(labels.size())
+        # print(labels.size())
 
 
         if training:
@@ -204,7 +204,6 @@ if __name__ == "__main__":
             Output = model(data)
 
         loss = capsule_loss(labels, Output)
-
         return loss, Output
 
     def reset_meters():
@@ -218,20 +217,19 @@ if __name__ == "__main__":
 
     def on_start_epoch(state):
         reset_meters()
-        state['iterator'] = tqdm(state['iterator'])
+        # state['iterator'] = tqdm(state['iterator'])
 
     def on_end_epoch(state):
-        print('[Epoch %d] Training Loss: %.4f' % (
-            state['epoch'], np.sqrt(meter_loss.value()[0])))
+        # print('[Epoch %d] Training Loss: %.4f' % (
+            # state['epoch'], np.sqrt(meter_loss.value()[0])))
 
         train_losses.append(np.sqrt(meter_loss.value()[0]))
         reset_meters()
 
         engine.test(processor, get_iterator(False))
 
-        print('[Epoch %d] Testing Loss: %.4f' % (
-            state['epoch'], np.sqrt(meter_loss.value()[0])))
-
+        # print('[Epoch %d] Testing Loss: %.4f' % (
+        #     state['epoch'], np.sqrt(meter_loss.value()[0])))
         # torch.save(model.state_dict(), '/mmfs1/home/users/belov/epochs/epoch_%d.pt' % state['epoch'])
         torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
@@ -247,9 +245,7 @@ if __name__ == "__main__":
 
     
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-
     # np.save("/mmfs1/home/users/belov/Results/train_losses", train_losses)
     # np.save("/mmfs1/home/users/belov/Results/test_losses", test_losses)
     np.save("../Results/train_losses", train_losses)
     np.save("../Results/test_losses", test_losses)
-
