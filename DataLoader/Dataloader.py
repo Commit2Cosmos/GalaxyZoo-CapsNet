@@ -58,8 +58,8 @@ class SDSSData(Dataset):
 transformed_dataset = SDSSData(
 # csv_file='/mmfs1/home/users/belov/Data/paths_votes.csv', 
 # root_dir='/mmfs1/home/users/belov/Data/images_gz2',
-csv_file='../Data/paths_votes.csv', 
-root_dir='../Data/images_training_rev1',
+csv_file='./InitData/Kaggle/votes_kaggle.csv', 
+root_dir='./InitData/Kaggle/images_kaggle',
 transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 list=[]
@@ -73,4 +73,4 @@ for i in range(len(transformed_dataset)):
 # list = np.array(list)
 # print(list.size)
 # np.save('/mmfs1/home/users/belov/ReadyFile/images', list)
-np.save('../ReadyFile/images', list)
+np.save('./PreparedData/Kaggle/images', list)

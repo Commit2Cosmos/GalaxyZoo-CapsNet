@@ -1,3 +1,7 @@
+# train the capsule network to predict the Galaxy Zoo vote fractions corresponding to an image
+# saves trained set of weights in epoch_%d.pt for each epoch
+# saves average value of the mean squared error across all images at every epoch in train_losses.npy & test_losses.npy
+
 import sys
 sys.setrecursionlimit(15000)
 import torch
@@ -9,15 +13,13 @@ from sklearn.model_selection import train_test_split
 
 BATCH_SIZE = 6
 NUM_CLASSES = 2 #Ig DECaLS data
-#NUM_CLASSES = 37 #If SDSS data
-NUM_EPOCHS = 1 #30
+NUM_EPOCHS = 20 #30
 NUM_ROUTING_ITERATIONS = 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
 def softmax(input, dim=1):
     transposed_input = input.transpose(dim, len(input.size()) - 1)
-    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1,
-                                                                    transposed_input.size(-1)), dim=-1)
+    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
 #Data augmentation, this increases size of dataset by processing pre-existing data.
@@ -36,14 +38,12 @@ def augmentation(x, max_shift=2):
     target_width_slice = slice(max(0, -w_shift), -w_shift + width)
 
     shifted_image = torch.zeros(*x.size())
-    shifted_image[:, :, source_height_slice, source_width_slice] = x[:,
-                                                                     :, target_height_slice, target_width_slice]
+    shifted_image[:, :, source_height_slice, source_width_slice] = x[:, :, target_height_slice, target_width_slice]
     return shifted_image.float()
 
 
 class CapsuleLayer(nn.Module):
-    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None,
-                 num_iterations=NUM_ROUTING_ITERATIONS):
+    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None, num_iterations=NUM_ROUTING_ITERATIONS):
         super(CapsuleLayer, self).__init__()
 
         self.num_route_nodes = num_route_nodes
@@ -52,12 +52,9 @@ class CapsuleLayer(nn.Module):
         self.num_capsules = num_capsules
 
         if num_route_nodes != -1:
-            self.route_weights = nn.Parameter(torch.randn(
-                num_capsules, num_route_nodes, in_channels, out_channels))
+            self.route_weights = nn.Parameter(torch.randn(num_capsules, num_route_nodes, in_channels, out_channels))
         else:
-            self.capsules = nn.ModuleList(
-                [nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=0) for _ in
-                 range(num_capsules)])
+            self.capsules = nn.ModuleList([nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=0) for _ in range(num_capsules)])
 
     def squash(self, tensor, dim=-1):
         squared_norm = (tensor ** 2).sum(dim=dim, keepdim=True)
@@ -84,7 +81,8 @@ class CapsuleLayer(nn.Module):
         return outputs
 
 
-
+# Lower layer (Primary) capsules predict output of next layer (Digit / parent) capsules
+# Routing weights get stronger for predictions with strong agreement with actual outputs of parent capsules
 
 
 
@@ -92,21 +90,19 @@ class CapsuleNet(nn.Module):
     def __init__(self):
         super(CapsuleNet, self).__init__()
 
-        # self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
+        # leads to 256 64x64 feature maps
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
-        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
-                                             kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
-                                           out_channels=2)
-
-        self.Linear = nn.Linear(NUM_CLASSES, NUM_CLASSES)
+        # reshapes to 32 primary capsules with 8 28x28 dimensions each
+        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
+        # self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
     def forward(self, x, y=None):
         x = F.relu(self.conv1(x), inplace=True)
         x = self.primary_capsules(x)
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
         x = (x ** 2).sum(dim=-1) ** 0.5
-        x = self.Linear(x.view(x.size(0), -1))
+        # x = self.Linear(x.view(x.size(0), -1))
 
         return x
 
@@ -132,14 +128,14 @@ if __name__ == "__main__":
     from torch.autograd import Variable
     from torch.optim import Adam
     from torchnet.engine import Engine
-    # from tqdm import tqdm
+    from tqdm import tqdm
     import torchnet as tnt
 
     model = CapsuleNet()
     # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
     model.cuda()
 
-    # print("# parameters:", sum(param.numel() for param in model.parameters()))
+    print("# parameters:", sum(param.numel() for param in model.parameters()))
 
     optimizer = Adam(model.parameters())
 
@@ -149,13 +145,10 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        # X = np.load('/mmfs1/home/users/belov/ReadyFile/images.npy')
-        X = np.load('../ReadyFile/images.npy')
+        X = np.load('./PreparedData/Kaggle/images.npy')
         #Load corresponding labels
-        # y = np.load('/mmfs1/home/users/belov/ReadyFile/votes.npy')
-        y = np.load('../ReadyFile/votes.npy')
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42)
+        y = np.load('./PreparedData/Kaggle/votes.npy')
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
             data = torch.from_numpy(X_train).float()
@@ -189,13 +182,12 @@ if __name__ == "__main__":
         #     print(labels)
 
         #Only include the 255 if the images have not been normalized
-        #data = augmentation(data.float())
-        data = augmentation(data.float() / 255.0)
+        data = augmentation(data.float())
+        # data = augmentation(data.float() / 255.0)
         labels = labels.to(torch.float)
 
         data = Variable(data).cuda()
         labels = Variable(labels).cuda()
-        # print(labels.size())
 
 
         if training:
@@ -217,21 +209,19 @@ if __name__ == "__main__":
 
     def on_start_epoch(state):
         reset_meters()
+        #! REMOVE TO RUN ON HEC
         # state['iterator'] = tqdm(state['iterator'])
 
     def on_end_epoch(state):
-        # print('[Epoch %d] Training Loss: %.4f' % (
-            # state['epoch'], np.sqrt(meter_loss.value()[0])))
+        print('[Epoch %d] Training Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
 
         train_losses.append(np.sqrt(meter_loss.value()[0]))
         reset_meters()
 
         engine.test(processor, get_iterator(False))
 
-        # print('[Epoch %d] Testing Loss: %.4f' % (
-        #     state['epoch'], np.sqrt(meter_loss.value()[0])))
-        # torch.save(model.state_dict(), '/mmfs1/home/users/belov/epochs/epoch_%d.pt' % state['epoch'])
-        torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
+        print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
+        torch.save(model.state_dict(), './Results/Kaggle/CapsReg/Epochs/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -243,9 +233,7 @@ if __name__ == "__main__":
     engine.hooks['on_start_epoch'] = on_start_epoch
     engine.hooks['on_end_epoch'] = on_end_epoch
 
-    
+
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    # np.save("/mmfs1/home/users/belov/Results/train_losses", train_losses)
-    # np.save("/mmfs1/home/users/belov/Results/test_losses", test_losses)
-    np.save("../Results/train_losses", train_losses)
-    np.save("../Results/test_losses", test_losses)
+    np.save("./Results/Kaggle/CapsReg", train_losses)
+    np.save("./Results/Kaggle/CapsReg", test_losses)

@@ -1,3 +1,5 @@
+# trains the network to classify a galaxy image as either smooth, featured or an artefact using binary labels
+
 import sys
 sys.setrecursionlimit(15000)
 import torch
@@ -5,7 +7,6 @@ import torch.nn.functional as F
 from torch import nn
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score
 
 
 BATCH_SIZE = 20
@@ -16,8 +17,7 @@ NUM_ROUTING_ITERATIONS = 3
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
 def softmax(input, dim=1):
     transposed_input = input.transpose(dim, len(input.size()) - 1)
-    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1,
-                                                                    transposed_input.size(-1)), dim=-1)
+    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
 
@@ -32,8 +32,7 @@ def augmentation(x, max_shift=2):
     target_width_slice = slice(max(0, -w_shift), -w_shift + width)
 
     shifted_image = torch.zeros(*x.size())
-    shifted_image[:, :, source_height_slice, source_width_slice] = x[:,
-                                                                     :, target_height_slice, target_width_slice]
+    shifted_image[:, :, source_height_slice, source_width_slice] = x[:, :, target_height_slice, target_width_slice]
     return shifted_image.float()
 
 
@@ -42,8 +41,7 @@ def augmentation(x, max_shift=2):
 
 
 class CapsuleLayer(nn.Module):
-    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None,
-                 num_iterations=NUM_ROUTING_ITERATIONS):
+    def __init__(self, num_capsules, num_route_nodes, in_channels, out_channels, kernel_size=None, stride=None, num_iterations=NUM_ROUTING_ITERATIONS):
         super(CapsuleLayer, self).__init__()
 
         self.num_route_nodes = num_route_nodes
@@ -52,12 +50,10 @@ class CapsuleLayer(nn.Module):
         self.num_capsules = num_capsules
 
         if num_route_nodes != -1:
-            self.route_weights = nn.Parameter(torch.randn(
-                num_capsules, num_route_nodes, in_channels, out_channels))
+            self.route_weights = nn.Parameter(torch.randn(num_capsules, num_route_nodes, in_channels, out_channels))
         else:
             self.capsules = nn.ModuleList(
-                [nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=0) for _ in
-                 range(num_capsules)])
+                [nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=0) for _ in range(num_capsules)])
 
     def squash(self, tensor, dim=-1):
         squared_norm = (tensor ** 2).sum(dim=dim, keepdim=True)
@@ -92,11 +88,9 @@ class CapsuleNet(nn.Module):
     def __init__(self):
         super(CapsuleNet, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
-        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
-                                             kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
-                                           out_channels=16)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=256, kernel_size=9, stride=1)
+        self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
 
         self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
@@ -139,7 +133,6 @@ if __name__ == "__main__":
     import torchnet as tnt
 
     model = CapsuleNet()
-    # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
     model.cuda()
 
     print("# parameters:", sum(param.numel() for param in model.parameters()))
@@ -151,7 +144,7 @@ if __name__ == "__main__":
     capsule_loss = CapsuleLoss()
 
     def get_iterator(mode):
-        X = np.load('../SDSS/Data/61000_SDSS_RGB_ImageData.npy')
+        X = np.load('../ReadyFile/images.npy')
         y = np.load('../SDSS/Data/SDSS_Data_Final_VoteFractions_3Class.npy')
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42)

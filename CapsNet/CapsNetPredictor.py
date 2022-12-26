@@ -1,6 +1,7 @@
+# Loads pre-trained weights from the epoch_%d.pt file to predict the vote fractions of input images
+
 import sys
 sys.setrecursionlimit(15000)
-
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -13,8 +14,7 @@ NUM_ROUTING_ITERATIONS = 3
 
 def softmax(input, dim=1):
     transposed_input = input.transpose(dim, len(input.size()) - 1)
-    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1,
-                                                                    transposed_input.size(-1)), dim=-1)
+    softmaxed_output = F.softmax(transposed_input.contiguous().view(-1, transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
 
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     from torch.optim import Adam
 
     model = CapsuleNet()
-    model.load_state_dict(torch.load('../edwardam/SDSS/epochs200/epoch_200.pt'))
+    model.load_state_dict(torch.load('./Results/Kaggle/CapsPred/Epochs/epoch200'))
     model.cuda()
 
     print("# parameters:", sum(param.numel() for param in model.parameters()))
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
 
     #Image data
-    X = np.load('../edwardam/Data/SDSSCustomData.npy')
+    X = np.load('../ReadyFile/images.npy')
 
     data = torch.from_numpy(X).float()
     data = augmentation(data.float())
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     for i in range(0,12820):
         i*=di
         #print(i, I*di)
-        #I+=1	
+        #I+=1
         print(I*di)
         datasample = data[i:I*di]
         datasamplecuda = Variable(datasample).cuda()
@@ -137,4 +137,5 @@ if __name__ == "__main__":
         CapsPred.append(Prednpy)
         I+=1
 
-    np.save('../edwardam/Output/RGBCapsPredict_3class', CapsPred)
+    # np.save('../edwardam/Output/RGBCapsPredict_3class', CapsPred)
+    np.save('./Results/Kaggle/CapsPred/', CapsPred)
