@@ -145,9 +145,9 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load('./PreparedData/Kaggle/images.npy')
+        X = np.load('./PreparedData/Kaggle/RGB/images.npy')
         #Load corresponding labels
-        y = np.load('./PreparedData/Kaggle/votes.npy')
+        y = np.load('./PreparedData/Kaggle/RGB/votes.npy')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
         engine.test(processor, get_iterator(False))
 
         print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
-        torch.save(model.state_dict(), './Results/Kaggle/CapsReg/Epochs/epoch_%d.pt' % state['epoch'])
+        torch.save(model.state_dict(), './Results/Kaggle/CapsReg/Epochs_RGB/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -235,5 +235,5 @@ if __name__ == "__main__":
 
 
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    np.save("./Results/Kaggle/CapsReg", train_losses)
-    np.save("./Results/Kaggle/CapsReg", test_losses)
+    np.save("./Results/Kaggle/CapsReg/Losses_RGB/test_losses", train_losses)
+    np.save("./Results/Kaggle/CapsReg/Losses_RGB/train_losses", test_losses)

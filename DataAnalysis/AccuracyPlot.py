@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 #Load the file which saved the RMSE loss of the CapsNet at each epoch.
-Test_LossGrey = np.load('../_ResultsRepeat/Decals60Graytest_losses.npy', allow_pickle=True)
-Train_LossGrey = np.load('../_ResultsRepeat/Decals60Graytrain_losses.npy', allow_pickle=True) 
+Test_LossGrey = np.load('./Results/Kaggle/CapsReg/Losses_Grey/test_losses.npy', allow_pickle=True)
+Train_LossGrey = np.load('./Results/Kaggle/CapsReg/Losses_Grey/train_losses.npy', allow_pickle=True) 
 
-Test_LossRGB = np.load('../_Results/Decals60_RGBtest_losses.npy', allow_pickle=True)
-Train_LossRGB = np.load('../_Results/Decals60_RGBtrain_losses.npy', allow_pickle=True)
+Test_LossRGB = np.load('./Results/Kaggle/CapsReg/Losses_RGB/test_losses.npy', allow_pickle=True)
+Train_LossRGB = np.load('./Results/Kaggle/CapsReg/Losses_RGB/train_losses.npy', allow_pickle=True)
 
 #Convert loss to an accuracy
 Test_AccuracyRGB = (1-Test_LossRGB)*100
