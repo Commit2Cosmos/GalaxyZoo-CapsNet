@@ -1,9 +1,7 @@
-.npy
-epochs
-*.csv
-*images*
-order.md
+*.npy
+Info
+InitData
+PreparedData
 Results
 test
 ReadyFile
-*.com

@@ -4,9 +4,9 @@ from skimage import data, img_as_float
 
 #Images: \J010\J010002.98-045610.5.png , J011\J011001.20+002441.9.png , J011\J011002.57+050018.4.png , J011\J011002.82+002515.1.png , J092928.60+231256.2.png
 #Blank image J095628.63+244102.5.png
-img = Image.open('../ReadyFile/images_gz2/1.jpg')
+img = Image.open('./InitData/Kaggle/images_train/100008.jpg')
 
-transform=transforms.Compose([transforms.ToTensor(), transforms.ToPILImage()])
+transform=transforms.Compose([transforms.ToTensor(), transforms.ToPILImage(), transforms.Grayscale(num_output_channels=1)])
 
 IMG = transform(img)
 clrs = IMG.getcolors()

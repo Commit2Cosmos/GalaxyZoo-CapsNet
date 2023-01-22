@@ -1,12 +1,13 @@
 from email.mime import image
 import os
 import pandas as pd
-import torch
 from torch.utils.data import Dataset
 from skimage import io
 from torchvision import transforms 
 # import PIL
 import numpy as np
+# from skimage.filters import threshold_otsu, gaussian
+
 
 
 
@@ -40,33 +41,55 @@ class SDSSData(Dataset):
     #__getitem__ to support the indexing such that dataset[i] can be used to get ith sample.
     def __getitem__(self, index):
         img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
-        image1 = io.imread(img_path)
-        labels = torch.tensor(self.annotations.iloc[index, 1:])
+        image = io.imread(img_path)
+        # labels = torch.tensor(self.annotations.iloc[index, 1:])
 
         if self.transform:
-            image = self.transform(image1)
-        return (image)
+            image = self.transform(image)
+        return image
+
+        # if self.transform:
+        #     image = self.transform(image)
+        #     Grayimg1 = img_as_float(image)
+        #     Grayimg = gaussian(Grayimg1, sigma=2.25)
+        #     #Grayimg = gaussian(Grayimg1, sigma=3)
+        #     transformTensor=transforms.Compose([transforms.ToTensor()])
+        #     thresh = threshold_otsu(Grayimg)
+        #     binary = Grayimg > thresh
+        #     GrayimgTensor = transformTensor(Grayimg1)
+        #     binaryTensor = transformTensor(binary)
+        #     Segmented = torch.mul(GrayimgTensor, binaryTensor)
+        # return Segmented
 
 
-
-#in main code:
-#'../gz_decals_dr5'
-# transformed_dataset = SDSSData(csv_file='../SDSS/Data/61000Sample.csv', 
-# root_dir='../SDSS/images', 
-# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 
 transformed_dataset = SDSSData(
-csv_file='./InitData/Kaggle/labels.csv', 
-root_dir='./InitData/Kaggle/images_kaggle',
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
-# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.ToPILImage()]))
+csv_file='./PreparedData/Kaggle/paths_votes.csv', 
+# root_dir='./InitData/Kaggle/images_train',
+root_dir='../Data/images_train_kaggle',
+# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1)]))
+# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
 
-list=[]
+
+# for i in range(4):
+#     sample = transformed_dataset[i]
+#     sample = torch.squeeze(sample)
+#     # print(sample.shape)
+    
+#     ax = plt.subplot(1, 4, i+1)
+#     plt.tight_layout()
+#     ax.set_title('Sample #{}'.format(i))
+#     ax.axis('off')
+#     plt.imshow(sample)
+# plt.show()
+
+
+list = []
 for i in range(len(transformed_dataset)):
     images = transformed_dataset[i]
-    # npimages = images.numpy()
     npimages = np.array(images)
     list.append(npimages)
     print(i)
 
-np.save('./PreparedData/Kaggle/RGB/images', list)
+np.save('./PreparedData/Kaggle/RGB/all_images', list)
