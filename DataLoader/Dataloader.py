@@ -64,7 +64,7 @@ class SDSSData(Dataset):
 
 
 transformed_dataset = SDSSData(
-csv_file='./PreparedData/Kaggle/paths_votes.csv', 
+csv_file='./PreparedData/Kaggle/paths_votes_2.csv', 
 # root_dir='./InitData/Kaggle/images_train',
 root_dir='../Data/images_train_kaggle',
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1)]))
@@ -92,4 +92,4 @@ for i in range(len(transformed_dataset)):
     list.append(npimages)
     print(i)
 
-np.save('./PreparedData/Kaggle/RGB/all_images', list)
+np.save('./PreparedData/Kaggle/RGB/images_2', list)

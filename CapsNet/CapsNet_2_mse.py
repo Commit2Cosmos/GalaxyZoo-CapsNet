@@ -15,9 +15,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # from sklearn.metrics import r2_score
 
-BATCH_SIZE = 2
+BATCH_SIZE = 20
 NUM_CLASSES = 1
-NUM_EPOCHS = 1
+NUM_EPOCHS = 200
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'Grey'
@@ -107,79 +107,50 @@ class CapsuleNet(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=IN_CHANNELS, out_channels=256, kernel_size=9, stride=1)
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
         self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
-        self.decoder = nn.Sequential(
-            nn.Linear(16 * NUM_CLASSES, 512),
-            nn.ReLU(inplace=True),
-            nn.Linear(512, 1024),
-            nn.ReLU(inplace=True),
-            nn.Linear(1024, 3 * 72 * 72),
-            nn.Sigmoid()
-        )
+        self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
     def forward(self, x, y=None):
 
-        # print(x.shape)
-        # init: [6, 1, 72, 72]
+        print("New")
+        print(x.shape)
+        # init: [20, 1, 72, 72]
         x = F.relu(self.conv1(x), inplace=True)
         # for conv layer output: (input width - filter size + 2*padding)/stride + bias
         #                            72             9               0       1      1
-        # [6, 256, 64, 64]
+        # [20, 256, 64, 64]
         # params: (9x9 + 1)*256
-        # print(x.shape)
+        print(x.shape)
 
         x = self.primary_capsules(x)
-        # [6, 32, 28, 28, 8]
+        # [20, 32, 28, 28, 8] or [20, 25088, 8]
         # params: ???
-        # print(x.shape)
-        
-        x = self.digit_capsules(x).squeeze().transpose(0, 1)
-        # [6, 2, 16]
-        # print(x.shape)
-        
-        classes = (x ** 2).sum(dim=-1) ** 0.5
-        # [6, 2]
-        # print(x.shape)
-
-        classes = F.softmax(classes, dim=-1)
-        
-        if y is None:
-            # In all batches, get the most active capsule.
-            _, max_length_indices = classes.max(dim=1)
-            y = torch.eye(NUM_CLASSES).cuda().index_select(dim=0, index=max_length_indices)
-
-        # !Check possible error
-        print("x.shape")
         print(x.shape)
-        print("y.shape")
-        print(y.shape)
-        p = (x * y[:, :, None]).reshape(-1, x.size(0))
-        reconstructions = self.decoder(p)
-        print('after recon:')
-        print(reconstructions.shape)
+        
+        x = self.digit_capsules(x).transpose(0, 1)
+        print(x.shape)
+        x = x.reshape((-1, 1, 16))
+        # [20, 1, 16]
+        print(x.shape)
 
-        return classes, reconstructions
+        x = (x ** 2).sum(dim=-1) ** 0.5
+        # [20, 1]
+        print(x.shape)
+
+        # x = self.Linear(x.view(x.size(0), -1))
+        # print(x.shape)
+
+        return x
 
 
-class CapsuleLoss2(nn.Module):
+
+#This class calculates the loss (the error) of each ouput
+class CapsuleLoss(nn.Module):
     def __init__(self):
-        super(CapsuleLoss2, self).__init__()
-        self.reconstruction_loss = nn.MSELoss(reduction='sum')
+        super(CapsuleLoss, self).__init__()
+        self.mse = nn.MSELoss()
 
-    def forward(self, images, labels, classes, reconstructions):
-        left = F.relu(0.9 - classes, inplace=True) ** 2
-        right = F.relu(classes - 0.1, inplace=True) ** 2
-
-        margin_loss = labels * left + 0.5 * (1. - labels) * right
-        margin_loss = margin_loss.sum()
-
-        print(images.shape)
-        print(reconstructions.shape)
-
-        assert torch.numel(images) == torch.numel(reconstructions)
-        images = images.view(reconstructions.size()[0], -1)
-        reconstruction_loss = self.reconstruction_loss(reconstructions, images)
-
-        return (margin_loss + 0.0005 * reconstruction_loss) / images.size(0)
+    def forward(self, labels, x):
+        return self.mse(labels, x)
 
 
 
@@ -203,16 +174,13 @@ if __name__ == "__main__":
 
     engine = Engine()
     meter_loss = tnt.meter.AverageValueMeter()
-    meter_accuracy = tnt.meter.ClassErrorMeter(accuracy=True)
-    confusion_meter = tnt.meter.ConfusionMeter(NUM_CLASSES, normalized=True)
-
-    capsule_loss = CapsuleLoss2()
+    capsule_loss = CapsuleLoss()
 
     def get_iterator(mode):
         #Load Images
-        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images.npy')
+        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images_2.npy')
         #Load corresponding labels
-        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes.npy')
+        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes_2.npy')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -227,44 +195,32 @@ if __name__ == "__main__":
 
     def processor(sample):
         data, labels, training = sample
-        
-        data = augmentation(data.float())
-        labels = labels.to(torch.long).squeeze()
+
+        # print(data.shape)
         # print(labels.shape)
-        labels = torch.eye(NUM_CLASSES).index_select(dim=0, index=labels)
+
+        data = augmentation(data.float())
+        labels = labels.to(torch.float)
 
         data = data.cuda()
         labels = labels.cuda()
 
-        if training:
-            classes, reconstructions = model(data, labels)
-        else:
-            classes, reconstructions = model(data)
-        print('data shape:')
-        print(data.shape)
-        print('labels shape:')
-        print(labels.shape)
-        print('reconstructions shape:')
-        print(reconstructions.shape)
-        loss = capsule_loss(data, labels, classes, reconstructions)
 
-        return loss, classes
+        if training:
+            Output = model(data, labels)
+        else:
+            Output = model(data)
+
+        loss = capsule_loss(labels, Output)
+        return loss, Output
 
     def reset_meters():
-        meter_accuracy.reset()
         meter_loss.reset()
-        confusion_meter.reset()
 
     def on_sample(state):
         state['sample'].append(state['train'])
 
     def on_forward(state):
-
-        tn = torch.tensor(state['sample'][1])
-        tn = tn.to(torch.float64)
-
-        meter_accuracy.add(state['output'].data, tn)
-        confusion_meter.add(state['output'].data, tn)
         meter_loss.add(state['loss'].item())
 
     def on_start_epoch(state):
@@ -273,36 +229,18 @@ if __name__ == "__main__":
         # state['iterator'] = tqdm(state['iterator'])
 
     def on_end_epoch(state):
-        print('[Epoch %d] Training Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
+        print('[Epoch %d] Training Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
 
-        train_accs.append(meter_accuracy.value()[0])
-        train_losses.append(meter_loss.value()[0])
-
+        train_losses.append(np.sqrt(meter_loss.value()[0]))
         reset_meters()
 
         engine.test(processor, get_iterator(False))
 
-        print('[Epoch %d] Testing Loss: %.4f (Accuracy: %.2f%%)' % (
-            state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
-
-        torch.save(model.state_dict(), '../epochs/epoch_%d.pt' % state['epoch'])
-        test_accs.append(meter_accuracy.value()[0])
-        test_losses.append(meter_loss.value()[0])
-
-        if state['epoch'] == NUM_EPOCHS:
-            confs.append(confusion_meter.value())
-
-        # Reconstruction visualization.
-
-        test_sample = next(iter(get_iterator(False)))
-
-        ground_truth = (test_sample[0].float() / 255.0)
-        _, reconstructions = model(ground_truth).cuda()
-        reconstruction = reconstructions.cpu().view_as(ground_truth).data
-
-        if state['epoch'] % 10 == 0:
-            np.save('./Results/Kaggle/Epochs_Grey_2/Truth/epoch_{}'.format(state['epoch']), ground_truth)
-            np.save('./Results/Kaggle/Epochs_Grey_2/Recon/epoch_{}'.format(state['epoch']), reconstruction)
+        print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
+        if state['epoch'] % 50 == 0 or state['epoch'] == 10:
+            # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+        test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
     #     state['epoch'] = 327
@@ -314,16 +252,8 @@ if __name__ == "__main__":
     engine.hooks['on_end_epoch'] = on_end_epoch
 
 
-    train_accs = []
-    train_losses = []
-    test_accs = []
-    test_losses = []
-    confs = []
-
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
-    np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
-
-    np.save("../Results/Kaggle/Acc_2/train_acc", train_accs)
-    np.save("../Results/Kaggle/Acc_2/test_acc", test_accs)
-    np.save("../Results/Kaggle/Acc_2/confs", confs)
+    # np.save(f"./Results/Kaggle/Losses_{COLORES}/losses_2", train_losses, allow_pickle=True)
+    # np.save(f"./Results/Kaggle/Losses_{COLORES}/losses_2", test_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)

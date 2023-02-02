@@ -150,25 +150,6 @@ class CapsuleLoss(nn.Module):
         return self.mse(labels, x)
 
 
-# class CapsuleLoss2(nn.Module):
-#     def __init__(self):
-#         super(CapsuleLoss2, self).__init__()
-#         self.reconstruction_loss = nn.MSELoss(size_average=False)
-
-#     def forward(self, images, labels, classes, reconstructions):
-#         left = F.relu(0.9 - classes, inplace=True) ** 2
-#         right = F.relu(classes - 0.1, inplace=True) ** 2
-
-#         margin_loss = labels * left + 0.5 * (1. - labels) * right
-#         margin_loss = margin_loss.sum()
-
-#         assert torch.numel(images) == torch.numel(reconstructions)
-#         images = images.view(reconstructions.size()[0], -1)
-#         reconstruction_loss = self.reconstruction_loss(reconstructions, images)
-
-#         return (margin_loss + 0.0005 * reconstruction_loss) / images.size(0)
-
-
 
 train_losses = []
 test_losses = []
@@ -194,9 +175,9 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load(f'./PreparedData/Kaggle/{COLORES}/all_images_37.npy')
+        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images.npy')
         #Load corresponding labels
-        y = np.load(f'./PreparedData/Kaggle/{COLORES}/all_votes_37.npy')
+        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes.npy')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -251,7 +232,7 @@ if __name__ == "__main__":
 
         print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
         # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
-        torch.save(model.state_dict(), '/storage/hpc/37/belov/37Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+        # torch.save(model.state_dict(), '/storage/hpc/37/belov/37Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -265,7 +246,7 @@ if __name__ == "__main__":
 
 
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    # np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
-    # np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
+    np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
+    np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)

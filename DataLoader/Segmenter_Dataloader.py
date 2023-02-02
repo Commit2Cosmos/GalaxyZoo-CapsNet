@@ -1,14 +1,12 @@
-from email.mime import image
 import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from skimage import io
 from torchvision import transforms 
-import PIL
 import numpy as np
 from skimage.filters import threshold_otsu, gaussian
-from skimage import data, img_as_float
+from skimage import img_as_float
 
 
 """
