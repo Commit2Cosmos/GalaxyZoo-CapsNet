@@ -3,12 +3,14 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset
 from skimage import io
-from torchvision import transforms 
-# import PIL
+from torchvision import transforms
+import torch
+
 import numpy as np
 # from skimage.filters import threshold_otsu, gaussian
 
-
+# Simard or Kaggle
+DATASET = 'Simard'
 
 
 """
@@ -61,14 +63,25 @@ class SDSSData(Dataset):
         #     Segmented = torch.mul(GrayimgTensor, binaryTensor)
         # return Segmented
 
+class GaussianBlurAugmentation:
+    """Blurs image with randomly chosen Gaussian blur
+    """
+    def __call__(self, sample):
+        noise_factor = 0.3
+        torch.tensor(sample)
+        noisy = sample + torch.rand_like(sample) * noise_factor
+        noisy = torch.clamp(noisy, 0., 1.)
+        noisy = np.array(noisy)
+        return noisy
 
 
 transformed_dataset = SDSSData(
-csv_file='./PreparedData/Kaggle/paths_votes_2.csv', 
-# root_dir='./InitData/Kaggle/images_train',
+csv_file=f'./PreparedData/{DATASET}/paths_votes_test.csv', 
+#* DON'T CHANGE
 root_dir='../Data/images_train_kaggle',
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1)]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
+# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), GaussianBlurAugmentation()]))
 transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
 
 
@@ -92,4 +105,5 @@ for i in range(len(transformed_dataset)):
     list.append(npimages)
     print(i)
 
-np.save('./PreparedData/Kaggle/RGB/images_2', list)
+
+np.save(f'./PreparedData/{DATASET}/RGB/images_test', list)

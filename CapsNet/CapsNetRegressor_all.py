@@ -15,17 +15,16 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # from sklearn.metrics import r2_score
 
+DATASET = 'Simard'
+# LEARNING_RATE = 0.001
 BATCH_SIZE = 5
-NUM_CLASSES = 37
-NUM_EPOCHS = 30
+# NUM_CLASSES = 7 if DATASET == 'Kaggle' else 7
+NUM_CLASSES = 6
+NUM_EPOCHS = 2
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'RGB'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
-
-#! Try on HEC
-#! torch.cuda.empty_cache()
-#! tensor.cpu()
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
 def softmax(input, dim=1):
@@ -88,7 +87,7 @@ class CapsuleLayer(nn.Module):
                     logits = logits + delta_logits
 
         else:
-            outputs = [capsule(x).view(x.size(0), -1, 1) for capsule in self.capsules]
+            outputs = [capsule(x).reshape(x.size(0), -1, 1) for capsule in self.capsules]
             outputs = torch.cat(outputs, dim=-1)
             outputs = self.squash(outputs)
 
@@ -107,7 +106,7 @@ class CapsuleNet(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=IN_CHANNELS, out_channels=256, kernel_size=9, stride=1)
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
         self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
-        self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
+        # self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
     def forward(self, x, y=None):
 
@@ -131,7 +130,7 @@ class CapsuleNet(nn.Module):
         
         x = (x ** 2).sum(dim=-1) ** 0.5
         # [6, 2]
-        # print(x.shape)
+        # print(x[0][0])
         
         # x = self.Linear(x.view(x.size(0), -1))
         # print(x.shape)
@@ -144,10 +143,10 @@ class CapsuleNet(nn.Module):
 class CapsuleLoss(nn.Module):
     def __init__(self):
         super(CapsuleLoss, self).__init__()
-        self.mse = nn.MSELoss()
+        self.mse = nn.MSELoss(reduction='sum')
 
     def forward(self, labels, x):
-        return self.mse(labels, x)
+        return self.mse(x, labels)
 
 
 
@@ -158,7 +157,7 @@ test_losses = []
 if __name__ == "__main__":
     from torch.optim import Adam
     from torchnet.engine import Engine
-    # from tqdm import tqdm
+    from tqdm import tqdm
     import torchnet as tnt
 
     model = CapsuleNet()
@@ -175,9 +174,9 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images.npy')
+        X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_test.npy')
         #Load corresponding labels
-        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes.npy')
+        y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_test.npy')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -220,7 +219,7 @@ if __name__ == "__main__":
     def on_start_epoch(state):
         reset_meters()
         #! REMOVE TO RUN ON HEC
-        # state['iterator'] = tqdm(state['iterator'])
+        state['iterator'] = tqdm(state['iterator'])
 
     def on_end_epoch(state):
         print('[Epoch %d] Training Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
@@ -231,14 +230,17 @@ if __name__ == "__main__":
         engine.test(processor, get_iterator(False))
 
         print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
-        # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
-        # torch.save(model.state_dict(), '/storage/hpc/37/belov/37Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+        if state['epoch'] % 10 == 0 or state['epoch'] == 2 or state['epoch'] == 5:
+            torch.save(model.state_dict(), './Results/' + DATASET + '/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+            # torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/' + str(NUM_CLASSES) + 'Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+        
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
     #     state['epoch'] = 327
     #
     # engine.hooks['on_start'] = on_start
+
     engine.hooks['on_sample'] = on_sample
     engine.hooks['on_forward'] = on_forward
     engine.hooks['on_start_epoch'] = on_start_epoch
@@ -246,7 +248,10 @@ if __name__ == "__main__":
 
 
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
-    np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
-    # np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
-    # np.save(f"/storage/hpc/37/belov/37Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+    np.save(f"./Results/{DATASET}/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    np.save(f"./Results/{DATASET}/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+
+    # np.save(f"./Results/{DATASET}/Acc/train_acc", train_accs)
+    # np.save(f"./Results/{DATASET}/Acc/test_acc", test_accs)

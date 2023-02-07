@@ -15,9 +15,10 @@ from torch import nn
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-BATCH_SIZE = 5
+BATCH_SIZE = 20
+LEARNING_RATE = 0.001
 NUM_CLASSES = 2
-NUM_EPOCHS = 5
+NUM_EPOCHS = 200
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'RGB'
@@ -119,7 +120,7 @@ class CapsuleNet(nn.Module):
             _, max_length_indices = classes.max(dim=1)
             y = torch.eye(NUM_CLASSES).cuda().index_select(dim=0, index=max_length_indices)
 
-        reconstructions = self.decoder((x * y[:, :, None]).reshape((x.size(0), -1)))
+        reconstructions = self.decoder((x * y[:, :, None]).reshape(x.size(0), -1))
 
         return classes, reconstructions
 
@@ -157,7 +158,7 @@ if __name__ == "__main__":
 
     print("# parameters:", sum(param.numel() for param in model.parameters()))
 
-    optimizer = Adam(model.parameters())
+    optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
 
     engine = Engine()
     meter_loss = tnt.meter.AverageValueMeter()
@@ -187,7 +188,7 @@ if __name__ == "__main__":
         data, labels, training = sample
 
         data = augmentation(data.float())
-        labels = labels.type(torch.LongTensor).reshape((-1))
+        labels = labels.type(torch.LongTensor).reshape(-1)
 
         # print(data.shape)
         # print(labels.shape)
@@ -214,12 +215,22 @@ if __name__ == "__main__":
     def on_sample(state):
         state['sample'].append(state['train'])
 
-    def on_forward(state):
-        tn = state['sample'][1].clone().detach()
-        tn = tn.type(torch.LongTensor).reshape((-1))
+    # def on_forward(state):
+        # tn = state['sample'][1].clone().detach()
+        # tn = tn.type(torch.LongTensor).reshape(-1)
+        # data = state['output'].data
+
+        # # print(data)
+        # # print(tn)
         
-        meter_accuracy.add(state['output'].data, tn)
-        confusion_meter.add(state['output'].data, tn)
+        # meter_accuracy.add(data, tn)
+        # # print(meter_accuracy.value()[0])
+        # confusion_meter.add(data, tn)
+        # meter_loss.add(state['loss'].item())
+
+    def on_forward(state):
+        meter_accuracy.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
+        confusion_meter.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
         meter_loss.add(state['loss'].item())
 
     def on_start_epoch(state):
@@ -238,7 +249,10 @@ if __name__ == "__main__":
 
         print('[Epoch %d] Testing Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
 
-        torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '_2/epoch_%d.pt' % state['epoch'])
+        if state['epoch'] % 50 == 0 or state['epoch'] == 10:
+            # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '_2/Epochs/epoch_%d.pt' % state['epoch'])
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Epochs/epoch_%d.pt' % state['epoch'])
+            
         test_accs.append(meter_accuracy.value()[0])
         test_losses.append(meter_loss.value()[0])
 
@@ -251,12 +265,16 @@ if __name__ == "__main__":
 
         #! Need /255??
         # ground_truth = (test_sample[0].float() / 255.0)
+
         ground_truth = test_sample[0].float()
         _, reconstructions = model(ground_truth.cuda())
         reconstruction = reconstructions.cpu().view_as(ground_truth).data
-        if state['epoch'] % 10 == 0:
-            np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth)
-            np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction)
+        if state['epoch'] % 50 == 0 or state['epoch'] == 10:
+            # np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
+            # np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
+    
+            np.save('/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
+            np.save('/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
     
     engine.hooks['on_sample'] = on_sample
     engine.hooks['on_forward'] = on_forward
@@ -272,6 +290,12 @@ if __name__ == "__main__":
 
     # np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
     # np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
-    # np.save("./Results/Kaggle/Acc_2/train_acc/", train_accs)
-    # np.save("./Results/Kaggle/Acc_2/test_acc/", test_accs)
-    # np.save("./Results/Kaggle/Acc_2/confs/", confs)
+    # np.save("./Results/Kaggle/Acc/train_acc/train_acc", train_accs)
+    # np.save("./Results/Kaggle/Acc/test_acc/test_acc", test_accs)
+    # np.save("./Results/Kaggle/Acc/confs/confs", confs)
+    
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/train_acc/train_acc", train_accs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/test_acc/test_acc", test_accs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/confs/confs", confs, allow_pickle=True)

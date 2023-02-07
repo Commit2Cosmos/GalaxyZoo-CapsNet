@@ -1,31 +1,30 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+DATASET = 'Simard'
+
 #Load the file which saved the RMSE loss of the CapsNet at each epoch.
 # Test_LossGrey = np.load('./Results/Kaggle/Losses_Grey/test_losses.npy', allow_pickle=True)
-# Train_LossGrey = np.load('./Results/Kaggle/Losses_Grey/train_losses.npy', allow_pickle=True) 
-
-Test_LossRGB = np.load('./Results/Kaggle/Losses_RGB/test_losses.npy', allow_pickle=True)
-Train_LossRGB = np.load('./Results/Kaggle/Losses_RGB/train_losses.npy', allow_pickle=True)
-
-#Convert loss to an accuracy
-Test_AccuracyRGB = (1-Test_LossRGB)*100
-Train_AccuracyRGB = (1-Train_LossRGB)*100
-print(Test_AccuracyRGB)
-print(Train_AccuracyRGB)
-
+# Train_LossGrey = np.load('./Results/Kaggle/Losses_Grey/train_losses.npy', allow_pickle=True)
 # Test_AccuracyGrey = (1-Test_LossGrey)*100
 # Train_AccuracyGrey = (1-Train_LossGrey)*100
-# print(Test_AccuracyGrey)
-# print(Train_AccuracyGrey)
 
+Test_LossRGB = np.load(f'./Results/{DATASET}/Losses_RGB/test_losses.npy', allow_pickle=True)
+Train_LossRGB = np.load(f'./Results/{DATASET}/Losses_RGB/train_losses.npy', allow_pickle=True)
+# Test_AccuracyRGB = (1-Test_LossRGB)*100
+# Train_AccuracyRGB = (1-Train_LossRGB)*100
+Test_AccuracyRGB = Test_LossRGB
+Train_AccuracyRGB = Train_LossRGB
+
+# Test_AccuracyRGB = np.load(f'./Results/{DATASET}/Acc/test_acc/test_acc.npy', allow_pickle=True)
+# Train_AccuracyRGB = np.load(f'./Results/{DATASET}/Acc/train_acc/train_acc.npy', allow_pickle=True)
 
 
 #Now define the x-axis which will consist of integer numbers from 1 to however many epochs the code was ran for.
 Epoch = []
 i = 0
 
-for i in range(0, 5):
+for i in range(0, 2):
     i += 1
     Epoch.append(i)
 

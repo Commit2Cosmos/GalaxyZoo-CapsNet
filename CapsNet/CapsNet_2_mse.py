@@ -15,12 +15,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # from sklearn.metrics import r2_score
 
-BATCH_SIZE = 20
-NUM_CLASSES = 1
-NUM_EPOCHS = 200
+# Simard or Kaggle
+DATASET = 'Simard'
+BATCH_SIZE = 5
+NUM_CLASSES = 7
+NUM_EPOCHS = 1
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
-COLORES = 'Grey'
+COLORES = 'RGB'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
 
 #! Try on HEC
@@ -111,30 +113,28 @@ class CapsuleNet(nn.Module):
 
     def forward(self, x, y=None):
 
-        print("New")
-        print(x.shape)
         # init: [20, 1, 72, 72]
         x = F.relu(self.conv1(x), inplace=True)
         # for conv layer output: (input width - filter size + 2*padding)/stride + bias
         #                            72             9               0       1      1
         # [20, 256, 64, 64]
         # params: (9x9 + 1)*256
-        print(x.shape)
+        # print(x.shape)
 
         x = self.primary_capsules(x)
         # [20, 32, 28, 28, 8] or [20, 25088, 8]
         # params: ???
-        print(x.shape)
+        # print(x.shape)
         
         x = self.digit_capsules(x).transpose(0, 1)
-        print(x.shape)
-        x = x.reshape((-1, 1, 16))
+        # print(x.shape)
+        x = x.reshape(-1, 1, 16)
         # [20, 1, 16]
-        print(x.shape)
+        # print(x.shape)
 
         x = (x ** 2).sum(dim=-1) ** 0.5
         # [20, 1]
-        print(x.shape)
+        # print(x.shape)
 
         # x = self.Linear(x.view(x.size(0), -1))
         # print(x.shape)
@@ -165,7 +165,6 @@ if __name__ == "__main__":
     import torchnet as tnt
 
     model = CapsuleNet()
-    # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
     model.cuda()
 
     print("# parameters:", sum(param.numel() for param in model.parameters()))
@@ -178,9 +177,13 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         #Load Images
-        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images_2.npy')
+        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images.npy')
+        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images.npy')
+        # X = np.load(f"/storage/hpc/37/belov/{DATASET}/PreparedData/{COLORES}/images.npy")
         #Load corresponding labels
-        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes_2.npy')
+        y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes.npy')
+        # y = np.load(f"/storage/hpc/37/belov/{DATASET}/PreparedData/{COLORES}/votes.npy")
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -191,7 +194,7 @@ if __name__ == "__main__":
             labels = torch.from_numpy(y_test)
 
         tensor_dataset = tnt.dataset.TensorDataset([data, labels])
-        return tensor_dataset.parallel(batch_size=BATCH_SIZE, num_workers=1, shuffle=mode)
+        return tensor_dataset.parallel(batch_size=BATCH_SIZE, num_workers=1, shuffle=mode, drop_last=True)
 
     def processor(sample):
         data, labels, training = sample
@@ -237,9 +240,9 @@ if __name__ == "__main__":
         engine.test(processor, get_iterator(False))
 
         print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
-        if state['epoch'] % 50 == 0 or state['epoch'] == 10:
+        if state['epoch'] % 10 == 0 or state['epoch'] == 1 or state['epoch'] == 5:
             # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
-            torch.save(model.state_dict(), '/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/' + NUM_CLASSES + 'Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
     # def on_start(state):
@@ -255,5 +258,5 @@ if __name__ == "__main__":
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
     # np.save(f"./Results/Kaggle/Losses_{COLORES}/losses_2", train_losses, allow_pickle=True)
     # np.save(f"./Results/Kaggle/Losses_{COLORES}/losses_2", test_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
