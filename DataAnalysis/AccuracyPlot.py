@@ -1,56 +1,68 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATASET = 'Simard'
+DATASET = 'Kaggle'
+PARAMS = 37   # 2, 6 or 37
+Y_LABEL = 'rmse'   # rmse, r2 or acc
+ITERATION = 1
 
-#Load the file which saved the RMSE loss of the CapsNet at each epoch.
-# Test_LossGrey = np.load('./Results/Kaggle/Losses_Grey/test_losses.npy', allow_pickle=True)
-# Train_LossGrey = np.load('./Results/Kaggle/Losses_Grey/train_losses.npy', allow_pickle=True)
-# Test_AccuracyGrey = (1-Test_LossGrey)*100
-# Train_AccuracyGrey = (1-Train_LossGrey)*100
 
-Test_LossRGB = np.load(f'./Results/{DATASET}/Losses_RGB/test_losses.npy', allow_pickle=True)
-Train_LossRGB = np.load(f'./Results/{DATASET}/Losses_RGB/train_losses.npy', allow_pickle=True)
-# Test_AccuracyRGB = (1-Test_LossRGB)*100
-# Train_AccuracyRGB = (1-Train_LossRGB)*100
-Test_AccuracyRGB = Test_LossRGB
-Train_AccuracyRGB = Train_LossRGB
+COLOR = 'RGB'
+EPOCHS = 200 if PARAMS == 2 else 30
 
-# Test_AccuracyRGB = np.load(f'./Results/{DATASET}/Acc/test_acc/test_acc.npy', allow_pickle=True)
-# Train_AccuracyRGB = np.load(f'./Results/{DATASET}/Acc/train_acc/train_acc.npy', allow_pickle=True)
+#* Load RMSE losses
+Train_RMSE = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Losses({ITERATION})/train_losses.npy', allow_pickle=True)
+Test_RMSE = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Losses({ITERATION})/test_losses.npy', allow_pickle=True)
+
+#* Load R2
+if ITERATION >= 2:
+    Train_R2 = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Acc({ITERATION})/r2/train_r2.npy', allow_pickle=True)
+    Test_R2 = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Acc({ITERATION})/r2/test_r2.npy', allow_pickle=True)
+
+#* Load accuracy (2 Param only!)
+if PARAMS == 2:
+    Train_AccuracyRGB = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Acc({ITERATION})/acc/train_acc.npy', allow_pickle=True)
+    Test_AccuracyRGB = np.load(f'../HECResults/{DATASET}/{PARAMS}Params/{COLOR}/Acc({ITERATION})/acc/test_acc.npy', allow_pickle=True)
+
+
 
 
 #Now define the x-axis which will consist of integer numbers from 1 to however many epochs the code was ran for.
-Epoch = []
-i = 0
-
-for i in range(0, 2):
-    i += 1
-    Epoch.append(i)
-
+Epoch = list(range(1, EPOCHS+1))
 print(Epoch)
 
 
 #Make the plot
-plt.title("Classification Accuracy of Kaggle Images Vs Number of Epochs")
+# plt.title(f"Classification Accuracy of {DATASET} Images Vs Number of Epochs")
+
 plt.xlabel("Epoch")
-plt.ylabel("Classification Accuracy")
 
-#Plot the actual graph plt.plot(X axis variable, Y axis variable, Characteristics of plot)
-plt.plot(Epoch, Test_AccuracyRGB, color='blue', linestyle='-',label='RGB Accuracy during Testing phase')
-plt.plot(Epoch, Train_AccuracyRGB, color='red', linestyle='-', label='RGB Accuracy during Training phase')
-# plt.plot(Epoch, Test_AccuracyGrey, color='black', linestyle='--',label='Greyscale Accuracy during Testing phase')
+if Y_LABEL == 'rmse':
+    plt.ylabel("RMSE Loss")
+    plt.plot(Epoch, Train_RMSE, color='red', linestyle='-', label='RGB RMSE during Training phase')
+    plt.plot(Epoch, Test_RMSE, color='blue', linestyle='-',label='RGB RMSE during Testing phase')
+    print("Min RGB Train RMSE: ", Train_RMSE.min())
+    print("Min RGB Test RMSE: ", Test_RMSE.min())
+elif Y_LABEL == 'r2':
+    plt.ylabel("R2")
+    plt.plot(Epoch, Train_R2, color='red', linestyle='-', label='RGB R2 during Training phase')
+    plt.plot(Epoch, Test_R2, color='blue', linestyle='-',label='RGB R2 during Testing phase')
+    print("Max RGB Train R2: ", Train_R2.max())
+    print("Max RGB Test R2: ", Test_R2.max())
+elif Y_LABEL == 'acc':
+    plt.ylabel("Accuracy")
+    plt.plot(Epoch, Train_AccuracyRGB, color='red', linestyle='-', label='RGB Accuracy during Training phase')
+    plt.plot(Epoch, Test_AccuracyRGB, color='blue', linestyle='-',label='RGB Accuracy during Testing phase')
+    print("Max RGB Train Accuracy: ", Train_AccuracyRGB.max())
+    print("Max RGB Test Accuracy: ", Test_AccuracyRGB.max())
+
+
+#* Greyscale
+# plt.plot(Epoch, Test_AccuracyGrey, color='black', linestyle='--', label='Greyscale Accuracy during Testing phase')
 # plt.plot(Epoch, Train_AccuracyGrey, color='grey', linestyle='--', label='Greyscale Accuracy during Training phase')
-
-
+    
 #Add a legend labelling each line
 plt.legend()
-
-#Print all the peak accuracies.
-print("Max RGB Train Accuracy: ", Train_AccuracyRGB.max())
-print("Max RGB Test Accuracy: ", Test_AccuracyRGB.max())
-# print("Max Grey Train Accuracy: ", Train_AccuracyGrey.max())
-# print("Max Grey Test Accuracy: ", Test_AccuracyGrey.max())
 
 #Show the plot created
 plt.show()

@@ -3,9 +3,6 @@
 # saves average value of the mean squared error across all images at every epoch in train_losses.npy & test_losses.npy
 # binary classification is used for reconstruction data (only galaxies with classification agreement above 80% are used)
 
-# import os
-# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = 'max_split_size_mb:512'
-# print(os.environ["PYTORCH_CUDA_ALLOC_CONF"])
 import sys
 sys.setrecursionlimit(15000)
 import torch
@@ -13,14 +10,12 @@ import torch.nn.functional as F
 from torch import nn
 import numpy as np
 from sklearn.model_selection import train_test_split
-# from sklearn.metrics import r2_score
 
-DATASET = 'Simard'
+DATASET = 'Kaggle'
 # LEARNING_RATE = 0.001
 BATCH_SIZE = 5
-# NUM_CLASSES = 7 if DATASET == 'Kaggle' else 7
-NUM_CLASSES = 6
-NUM_EPOCHS = 2
+NUM_CLASSES = 37 if DATASET == 'Kaggle' else 6
+NUM_EPOCHS = 1
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'RGB'
@@ -143,10 +138,10 @@ class CapsuleNet(nn.Module):
 class CapsuleLoss(nn.Module):
     def __init__(self):
         super(CapsuleLoss, self).__init__()
-        self.mse = nn.MSELoss(reduction='sum')
+        self.mse = nn.MSELoss(reduction='mean')
 
     def forward(self, labels, x):
-        return self.mse(x, labels)
+        return self.mse(labels, x)
 
 
 
@@ -157,8 +152,9 @@ test_losses = []
 if __name__ == "__main__":
     from torch.optim import Adam
     from torchnet.engine import Engine
-    from tqdm import tqdm
+    # from tqdm import tqdm
     import torchnet as tnt
+    from torchmetrics import R2Score
 
     model = CapsuleNet()
     # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
@@ -170,13 +166,18 @@ if __name__ == "__main__":
 
     engine = Engine()
     meter_loss = tnt.meter.AverageValueMeter()
+
+    r2_score = R2Score(num_outputs=NUM_CLASSES, adjusted=NUM_CLASSES, multioutput='variance_weighted')
+
     capsule_loss = CapsuleLoss()
 
     def get_iterator(mode):
-        #Load Images
-        X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_test.npy')
-        #Load corresponding labels
-        y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_test.npy')
+        # Load Images
+        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_{NUM_CLASSES}.npy')
+        X = np.load(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/PreparedData/images_{NUM_CLASSES}.npy")
+        # Load corresponding labels
+        # y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_{NUM_CLASSES}.npy')
+        y = np.load(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/PreparedData/votes_{NUM_CLASSES}.npy")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -208,6 +209,7 @@ if __name__ == "__main__":
         return loss, Output
 
     def reset_meters():
+        r2_score.reset()
         meter_loss.reset()
 
     def on_sample(state):
@@ -216,23 +218,36 @@ if __name__ == "__main__":
     def on_forward(state):
         meter_loss.add(state['loss'].item())
 
+        new_output = state['output'].data.cpu()
+        new_sample = state['sample'][1].data.cpu()
+        r2_score.update(new_output, new_sample)
+
     def on_start_epoch(state):
         reset_meters()
         #! REMOVE TO RUN ON HEC
-        state['iterator'] = tqdm(state['iterator'])
+        # state['iterator'] = tqdm(state['iterator'])
 
     def on_end_epoch(state):
         print('[Epoch %d] Training Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
+        r2 = r2_score.compute()
+        print(f'R2: {r2}')
 
+        train_r2.append(r2)
         train_losses.append(np.sqrt(meter_loss.value()[0]))
         reset_meters()
 
         engine.test(processor, get_iterator(False))
 
         print('[Epoch %d] Testing Loss: %.4f' % (state['epoch'], np.sqrt(meter_loss.value()[0])))
+
+        r2 = r2_score.compute()
+        print(f'R2: {r2}')
+
+        test_r2.append(r2)
+
         if state['epoch'] % 10 == 0 or state['epoch'] == 2 or state['epoch'] == 5:
-            torch.save(model.state_dict(), './Results/' + DATASET + '/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
-            # torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/' + str(NUM_CLASSES) + 'Params/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+        #     torch.save(model.state_dict(), './Results/' + DATASET + '/Epochs_' + COLORES + '/epoch_%d.pt' % state['epoch'])
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/' + str(NUM_CLASSES) + 'Params/' + COLORES + '/Epochs/epoch_%d.pt' % state['epoch'])
         
         test_losses.append(np.sqrt(meter_loss.value()[0]))
 
@@ -246,12 +261,17 @@ if __name__ == "__main__":
     engine.hooks['on_start_epoch'] = on_start_epoch
     engine.hooks['on_end_epoch'] = on_end_epoch
 
+    train_r2 = []
+    test_r2 = []
 
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
-    np.save(f"./Results/{DATASET}/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
-    np.save(f"./Results/{DATASET}/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
-    # np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
-    # np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
 
-    # np.save(f"./Results/{DATASET}/Acc/train_acc", train_accs)
-    # np.save(f"./Results/{DATASET}/Acc/test_acc", test_accs)
+    # np.save(f"./Results/{DATASET}/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/r2/train_r2", train_r2)
+    # np.save(f"./Results/{DATASET}/Acc/r2/test_r2", test_r2)
+    
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/Losses/train_losses", train_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/Losses/test_losses", test_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/Acc/train_r2", train_r2, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/{NUM_CLASSES}Params/{COLORES}/Acc/test_r2", test_r2, allow_pickle=True)

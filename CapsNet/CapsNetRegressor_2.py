@@ -23,6 +23,7 @@ NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'RGB'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
+DATASET = 'Kaggle'
 
 	
 # softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -136,8 +137,7 @@ class CapsuleLoss(nn.Module):
 
         margin_loss = labels * left + 0.5 * (1. - labels) * right
         margin_loss = margin_loss.sum()
-        # print(images.shape)
-        # print(reconstructions.shape)
+        
         assert torch.numel(images) == torch.numel(reconstructions)
         images = images.reshape(reconstructions.size()[0], -1)
         reconstruction_loss = self.reconstruction_loss(reconstructions, images)
@@ -148,9 +148,10 @@ class CapsuleLoss(nn.Module):
 if __name__ == "__main__":
     from torch.optim import Adam
     from torchnet.engine import Engine
-    # from torchvision.datasets.mnist import MNIST
     # from tqdm import tqdm
     import torchnet as tnt
+    from torchmetrics import R2Score
+
 
     model = CapsuleNet()
     # model.load_state_dict(torch.load('epochs/epoch_327.pt'))
@@ -164,14 +165,18 @@ if __name__ == "__main__":
     meter_loss = tnt.meter.AverageValueMeter()
     meter_accuracy = tnt.meter.ClassErrorMeter(accuracy=True)
     confusion_meter = tnt.meter.ConfusionMeter(NUM_CLASSES, normalized=True)
+    
+    r2_score = R2Score()
 
     capsule_loss = CapsuleLoss()
 
     def get_iterator(mode):
-        #Load Images
-        X = np.load(f'./PreparedData/Kaggle/{COLORES}/images_2.npy')
-        #Load corresponding labels
-        y = np.load(f'./PreparedData/Kaggle/{COLORES}/votes_2.npy')
+        # Load Images
+        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_test.npy')
+        X = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/images_2.npy")
+        # Load corresponding labels
+        # y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_test.npy')
+        y = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/votes_2.npy")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -189,9 +194,6 @@ if __name__ == "__main__":
 
         data = augmentation(data.float())
         labels = labels.type(torch.LongTensor).reshape(-1)
-
-        # print(data.shape)
-        # print(labels.shape)
 
         labels = torch.eye(NUM_CLASSES).index_select(dim=0, index=labels)
         
@@ -211,26 +213,19 @@ if __name__ == "__main__":
         meter_accuracy.reset()
         meter_loss.reset()
         confusion_meter.reset()
+        r2_score.reset()
 
     def on_sample(state):
         state['sample'].append(state['train'])
 
-    # def on_forward(state):
-        # tn = state['sample'][1].clone().detach()
-        # tn = tn.type(torch.LongTensor).reshape(-1)
-        # data = state['output'].data
-
-        # # print(data)
-        # # print(tn)
-        
-        # meter_accuracy.add(data, tn)
-        # # print(meter_accuracy.value()[0])
-        # confusion_meter.add(data, tn)
-        # meter_loss.add(state['loss'].item())
-
     def on_forward(state):
         meter_accuracy.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
         confusion_meter.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
+
+        new_output = state['output'][:,1:].reshape(-1).data.cpu()
+        new_sample = state['sample'][1].reshape(-1).data.cpu()
+        r2_score.update(new_output, new_sample)
+
         meter_loss.add(state['loss'].item())
 
     def on_start_epoch(state):
@@ -239,7 +234,10 @@ if __name__ == "__main__":
 
     def on_end_epoch(state):
         print('[Epoch %d] Training Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
+        r2 = r2_score.compute()
+        print(f'R2: {r2}')
 
+        train_r2.append(r2)
         train_accs.append(meter_accuracy.value()[0])
         train_losses.append(meter_loss.value()[0])
 
@@ -247,34 +245,35 @@ if __name__ == "__main__":
 
         engine.test(processor, get_iterator(False))
 
-        print('[Epoch %d] Testing Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
-
         if state['epoch'] % 50 == 0 or state['epoch'] == 10:
             # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '_2/Epochs/epoch_%d.pt' % state['epoch'])
-            torch.save(model.state_dict(), '/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Epochs/epoch_%d.pt' % state['epoch'])
-            
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Epochs/epoch_%d.pt' % state['epoch'])
+
+        print('[Epoch %d] Testing Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
+
+        r2 = r2_score.compute()
+        print(f'R2: {r2}')
+
+        test_r2.append(r2)       
         test_accs.append(meter_accuracy.value()[0])
         test_losses.append(meter_loss.value()[0])
 
         if state['epoch'] == NUM_EPOCHS:
             confs.append(confusion_meter.value())
 
-        # Reconstruction visualization.
+        # Reconstruction visualization
 
         test_sample = next(iter(get_iterator(False)))
-
-        #! Need /255??
-        # ground_truth = (test_sample[0].float() / 255.0)
 
         ground_truth = test_sample[0].float()
         _, reconstructions = model(ground_truth.cuda())
         reconstruction = reconstructions.cpu().view_as(ground_truth).data
         if state['epoch'] % 50 == 0 or state['epoch'] == 10:
-            # np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
-            # np.save('./Results/Kaggle/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
+            # np.save('./Results/' + DATASET + '/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
+            # np.save('./Results/' + DATASET + '/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
     
-            np.save('/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
-            np.save('/storage/hpc/37/belov/Kaggle/2Params/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
+            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
+            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
     
     engine.hooks['on_sample'] = on_sample
     engine.hooks['on_forward'] = on_forward
@@ -286,16 +285,23 @@ if __name__ == "__main__":
     test_accs = []
     test_losses = []
     confs = []
+    train_r2 = []
+    test_r2 = []
+
     engine.train(processor, get_iterator(True), maxepoch=NUM_EPOCHS, optimizer=optimizer)
 
-    # np.save(f"./Results/Kaggle/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
-    # np.save(f"./Results/Kaggle/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
-    # np.save("./Results/Kaggle/Acc/train_acc/train_acc", train_accs)
-    # np.save("./Results/Kaggle/Acc/test_acc/test_acc", test_accs)
-    # np.save("./Results/Kaggle/Acc/confs/confs", confs)
+    # np.save(f"./Results/{DATASET}/Losses_{COLORES}/test_losses", train_losses, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Losses_{COLORES}/train_losses", test_losses, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/acc/train_acc", train_accs, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/acc/test_acc", test_accs, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/confs/confs", confs, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/r2/train_r2", train_r2, allow_pickle=True)
+    # np.save(f"./Results/{DATASET}/Acc/r2/test_r2", test_r2, allow_pickle=True)
     
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/train_losses", train_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Losses_{COLORES}/test_losses", test_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/train_acc/train_acc", train_accs, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/test_acc/test_acc", test_accs, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/Kaggle/2Params/Acc/confs/confs", confs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses/train_losses", train_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses/test_losses", test_losses, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/acc/train_acc", train_accs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/acc/test_acc", test_accs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/confs/confs", confs, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/r2/train_r2", train_r2, allow_pickle=True)
+    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/r2/test_r2", test_r2, allow_pickle=True)

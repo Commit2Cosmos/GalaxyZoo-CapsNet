@@ -5,12 +5,11 @@ from torch.utils.data import Dataset
 from skimage import io
 from torchvision import transforms
 import torch
-
 import numpy as np
-# from skimage.filters import threshold_otsu, gaussian
+import matplotlib.pyplot as plt
+import seaborn as sns
+# import cv2
 
-# Simard or Kaggle
-DATASET = 'Simard'
 
 
 """
@@ -75,27 +74,129 @@ class GaussianBlurAugmentation:
         return noisy
 
 
+# Simard or Kaggle
+DATASET = 'Simard'
+
 transformed_dataset = SDSSData(
-csv_file=f'./PreparedData/{DATASET}/paths_votes_test.csv', 
-#* DON'T CHANGE
-root_dir='../Data/images_train_kaggle',
+csv_file=f'./PreparedData/{DATASET}/paths_votes_6.csv',
+root_dir='../Data/images_train_kaggle',     #! DON'T CHANGE
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1)]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), GaussianBlurAugmentation()]))
 transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
 
 
-# for i in range(4):
+toPIL = transforms.ToPILImage()
+
+
+#*#######  VIEW 4 IMAGES FROM DATASET  ############
+# image_index = 20
+# for i in range(image_index, image_index+5):
 #     sample = transformed_dataset[i]
 #     sample = torch.squeeze(sample)
 #     # print(sample.shape)
-    
+#     sample = toPIL(sample)
+
 #     ax = plt.subplot(1, 4, i+1)
 #     plt.tight_layout()
-#     ax.set_title('Sample #{}'.format(i))
+#     ax.set_title('Sample {}'.format(i+1))
 #     ax.axis('off')
 #     plt.imshow(sample)
 # plt.show()
+
+#* PCA on 1 image
+# NUM_COLORES = 3
+# def apply_pca(img):
+    #* Standardize
+    # img = img.reshape(-1, NUM_COLORES)
+    # img = np.array(img)
+
+    # matrix = np.zeros((img[:,0].size, NUM_COLORES))
+
+    # for i in range(NUM_COLORES):
+    #     dim_arr = img[:,i]
+    #     arrayStd = (dim_arr - dim_arr.mean())/dim_arr.std()
+    #     matrix[:,i] = arrayStd
+
+    #* Compute eigen-values/vectors
+
+    # cov = np.cov(matrix.transpose())
+
+    # EigVal, EigVec = np.linalg.eig(cov)
+    # print(EigVal)
+
+    #* Sort vectors by values
+    # order = EigVal.argsort()[::-1]
+    # EigVal = EigVal[order]
+    # EigVec = EigVec[:,order]
+
+    #* Projecting data on Eigen vector directions resulting to Principal Components (cross product)
+    # PC = np.matmul(matrix, EigVec)
+
+    #* Dependency check (Generate Pairplot for original data and transformed PCs)
+    #* Original
+    # COLORES = ['R', 'G', 'B']
+    # a = sns.pairplot(pd.DataFrame(matrix, columns = COLORES))
+    # a.fig.suptitle("Pair plot of Band images")
+
+    #* PC
+    # PCs = ['PC 1', 'PC 2', 'PC 3']
+    # a = sns.pairplot(pd.DataFrame(PC, columns = PCs))
+    # a.fig.suptitle("Pair plot of PCs")
+
+    # plt.show()
+
+    # plt.figure(figsize=(8,6))
+    # plt.bar([1,2,3], EigVal/sum(EigVal)*100, align='center', width=0.4, tick_label = PCs)
+    # plt.ylabel('Variance (%)')
+    # plt.title('Information retention')
+    # plt.show()
+
+    #* Convert back to images
+    # PC = PC.reshape(-1, 216, 216)
+    # img = img.reshape(-1, 216, 216)
+    
+    #* Visualize compression
+#     fig, axes = plt.subplots(1, 3, figsize=(10,7))
+#     fig.subplots_adjust(wspace=0.1, hspace=0.15)
+#     fig.suptitle('Intensities of Principal Components ', fontsize=12)
+
+#     axes = axes.ravel()
+#     for i in range(NUM_COLORES):
+#         PC_img = PC[i,:,:]
+#         axes[i].imshow(PC_img, cmap='gray')
+#         axes[i].set_title('PC ' + str(i+1), fontsize=12)
+#         axes[i].axis('off')
+#     plt.show()
+
+# apply_pca(transformed_dataset[0])
+
+
+
+
+#*#######  VIEW ORIGINAL VS TRANSFORMED  #############
+# samples = 4
+# starting_index = 28
+
+# fig, axs = plt.subplots(2, samples, figsize=(10,7))
+# fig.subplots_adjust(wspace=0.1, hspace=0.0)
+# axs = axs.ravel()
+
+# for i in range(starting_index, starting_index + samples):
+#     original = transformed_dataset[i]
+#     # transformed = transforms.Resize((72,72))(original)
+#     transformed = apply_pca(original)
+    
+#     ii = (i-starting_index)
+
+#     axs[ii].imshow(toPIL(original))
+#     axs[ii].axis('off')
+
+#     axs[ii+samples].imshow(toPIL(transformed))
+#     axs[ii+samples].axis('off')
+
+# plt.show()
+
 
 
 list = []
@@ -106,4 +207,4 @@ for i in range(len(transformed_dataset)):
     print(i)
 
 
-np.save(f'./PreparedData/{DATASET}/RGB/images_test', list)
+# np.save(f'./PreparedData/{DATASET}/RGB/images_6', list)
