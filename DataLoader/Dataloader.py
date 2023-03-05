@@ -28,7 +28,7 @@ class SDSSData(Dataset):
         """ 
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
-        self.transform = transform 
+        self.transform = transform
 
 
 
@@ -48,19 +48,7 @@ class SDSSData(Dataset):
         if self.transform:
             image = self.transform(image)
         return image
-
-        # if self.transform:
-        #     image = self.transform(image)
-        #     Grayimg1 = img_as_float(image)
-        #     Grayimg = gaussian(Grayimg1, sigma=2.25)
-        #     #Grayimg = gaussian(Grayimg1, sigma=3)
-        #     transformTensor=transforms.Compose([transforms.ToTensor()])
-        #     thresh = threshold_otsu(Grayimg)
-        #     binary = Grayimg > thresh
-        #     GrayimgTensor = transformTensor(Grayimg1)
-        #     binaryTensor = transformTensor(binary)
-        #     Segmented = torch.mul(GrayimgTensor, binaryTensor)
-        # return Segmented
+        
 
 class GaussianBlurAugmentation:
     """Blurs image with randomly chosen Gaussian blur
@@ -75,15 +63,17 @@ class GaussianBlurAugmentation:
 
 
 # Simard or Kaggle
-DATASET = 'Simard'
+DATASET = 'Kaggle'
+PARAMS = 2
 
 transformed_dataset = SDSSData(
-csv_file=f'./PreparedData/{DATASET}/paths_votes_6.csv',
+# csv_file=f'./PreparedData/{DATASET}/paths_votes_{PARAMS}.csv',
+csv_file=f'./PreparedData/{DATASET}/paths_votes_deepcaps.csv',
 root_dir='../Data/images_train_kaggle',     #! DON'T CHANGE
-# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1)]))
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((64,64)), transforms.Grayscale()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), GaussianBlurAugmentation()]))
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
+# transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
 
 
 toPIL = transforms.ToPILImage()
@@ -185,15 +175,15 @@ toPIL = transforms.ToPILImage()
 # for i in range(starting_index, starting_index + samples):
 #     original = transformed_dataset[i]
 #     # transformed = transforms.Resize((72,72))(original)
-#     transformed = apply_pca(original)
+#     # transformed = apply_pca(original)
     
 #     ii = (i-starting_index)
 
 #     axs[ii].imshow(toPIL(original))
 #     axs[ii].axis('off')
 
-#     axs[ii+samples].imshow(toPIL(transformed))
-#     axs[ii+samples].axis('off')
+#     # axs[ii+samples].imshow(toPIL(transformed))
+#     # axs[ii+samples].axis('off')
 
 # plt.show()
 
@@ -207,4 +197,4 @@ for i in range(len(transformed_dataset)):
     print(i)
 
 
-# np.save(f'./PreparedData/{DATASET}/RGB/images_6', list)
+np.save(f'./PreparedData/{DATASET}/Grey/images_deepcaps_kaggle_1', list)

@@ -1,1 +1,3 @@
 change loop in dataloader so outputs tensors
+Add # of galaxies to annotations
+Train everything on Greyscale

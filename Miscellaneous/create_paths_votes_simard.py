@@ -1,7 +1,9 @@
 import pandas as pd
 import os
 import numpy as np
-import torch
+
+
+PARAMS = 2
 
 
 #* MATCH SDSS & IMAGE IDS FOR SIMARD
@@ -51,64 +53,46 @@ votes = votes.dropna(axis = 0)
 # print(pd.DataFrame(votes.values.max(0)[None, :], columns=votes.columns))
 
 
-#! MULTI PARAMETER ONLY ! #######################################
-
-#* rescaling so all label values are in set [0,1]
-# minim = votes.iloc[:,1:].min()
-# maxim = votes.iloc[:,1:].max()
-# for i in range(1, len(votes.columns)):
-#     votes.iloc[:,i] = (votes.iloc[:,i] - minim[i-1]) / (maxim[i-1] - minim[i-1])
-
-
-#* 
+if PARAMS == 6:
+    #* rescaling so all label values are in set [0,1]
+    minim = votes.iloc[:,1:].min()
+    maxim = votes.iloc[:,1:].max()
+    for i in range(1, len(votes.columns)):
+        votes.iloc[:,i] = (votes.iloc[:,i] - minim[i-1]) / (maxim[i-1] - minim[i-1])
 
 
-#* PCA
-# labels = torch.tensor(votes.iloc[:5,1:3].values, dtype=torch.float32)
-# print(labels)
-# U, S, V = torch.pca_lowrank(labels, niter=3)
-# print(V)
-# print(votes)
-
-#!#############################################################
+if PARAMS == 2:
+    #* find relative error & filter accordingly
 
 
-
-#! 2 PARAMETER ONLY ! #######################################
-
-# #* find relative error & filter accordingly
-
-
-# #* 0: smooth (n > 3); 1: featured (n < 1.5)
-# votes = votes.loc[(votes['ng'] > 3.0) | (votes['ng'] < 1.5)]
-# votes.loc[votes['ng'] < 1.5, 'ng'] = 1
-# votes.loc[votes['ng'] > 3, 'ng'] = 0
+    #* 0: smooth (n > 3); 1: featured (n < 1.5)
+    votes = votes.loc[(votes['ng'] > 3.0) | (votes['ng'] < 1.5)]
+    votes.loc[votes['ng'] < 1.5, 'ng'] = 1
+    votes.loc[votes['ng'] > 3, 'ng'] = 0
 
 
-# #* filter out unphysical half-light radius value
-# votes = votes.loc[(votes['Rchl_r'] > 0.5) & (votes['Rchl_r'] < 50.0)]
+    #* filter out unphysical half-light radius value
+    votes = votes.loc[(votes['Rchl_r'] > 0.5) & (votes['Rchl_r'] < 50.0)]
 
 
-# #* remove all but first and last column
-# votes = votes.filter(['GalaxyID', 'ng'])
-
-#!#############################################################
+    #* remove all but first and last column
+    votes = votes.filter(['GalaxyID', 'ng'])
 
 
 #* match labels to images
-# votes['GalaxyID'] = votes.iloc[:,0].map(lambda x:f'{x}.jpg')
-# filenames = os.listdir('../Data/images_train_kaggle')
-# filenames = pd.DataFrame(filenames, columns=['filenames'])
-# votes = pd.merge(left=votes, right=filenames, left_on='GalaxyID', right_on='filenames')
-# votes.drop('filenames', axis=1, inplace=True)
+votes['GalaxyID'] = votes.iloc[:,0].map(lambda x:f'{x}.jpg')
+filenames = os.listdir('../Data/images_train_kaggle')
+filenames = pd.DataFrame(filenames, columns=['filenames'])
+votes = pd.merge(left=votes, right=filenames, left_on='GalaxyID', right_on='filenames')
+votes.drop('filenames', axis=1, inplace=True)
 
 
 #* print total counts of featured and smooth samples
-# total = len(votes.index)
-# feaured = int(votes['ng'].sum(axis=0))
-# print(f"Featured count: {feaured}")
-# print(f"Smooth count: {total - feaured}")
+total = len(votes.index)
+feaured = int(votes['ng'].sum(axis=0))
+print(f"Featured count: {feaured}")
+print(f"Smooth count: {total - feaured}")
 
 
 #* save csv
-# votes.to_csv('./PreparedData/Simard/paths_votes_6.csv', encoding='utf-8', index=False)
+votes.to_csv(f'./PreparedData/Simard/paths_votes_deepcaps.csv', encoding='utf-8', index=False)

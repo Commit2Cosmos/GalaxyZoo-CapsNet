@@ -21,9 +21,9 @@ NUM_CLASSES = 2
 NUM_EPOCHS = 200
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
-COLORES = 'RGB'
+COLORES = 'Grey'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
-DATASET = 'Kaggle'
+DATASET = 'Simard'
 
 	
 # softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -100,7 +100,7 @@ class CapsuleNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(512, 1024),
             nn.ReLU(inplace=True),
-            nn.Linear(1024, 3 * 72 * 72),
+            nn.Linear(1024, IN_CHANNELS * 72 * 72),
             nn.Sigmoid()
         )
 
@@ -172,10 +172,10 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         # Load Images
-        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_test.npy')
+        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_2.npy')
         X = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/images_2.npy")
         # Load corresponding labels
-        # y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_test.npy')
+        # y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_2.npy')
         y = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/votes_2.npy")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 

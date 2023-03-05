@@ -5,7 +5,7 @@ import math
 
 
 #* load votes
-# merged = pd.read_csv('./InitData/Kaggle/labels_train.csv')
+merged = pd.read_csv('./InitData/Kaggle/labels_train.csv')
 
 ############# UNCOMMENT FOR 2 PARAM #################################
 
@@ -53,7 +53,7 @@ else:
 #####################################################################
 
 #* match labels to images 
-merged['GalaxyID'] = merged.iloc[:,0].map(lambda x:f'{x}.jpg')
+merged['GalaxyID'] = merged.iloc[:,0].apply(lambda x:f'{x}.jpg')
 # filenames = os.listdir('./InitData/Kaggle/images_train')
 filenames = os.listdir('../Data/images_train_kaggle')
 filenames = pd.DataFrame(filenames, columns=['filenames'])
@@ -63,4 +63,4 @@ print(merged)
 
 
 #* save csv
-merged.to_csv('./PreparedData/Kaggle/paths_votes_2.csv', encoding='utf-8', index=False)
+# merged.to_csv('./PreparedData/Kaggle/paths_votes_deepcaps.csv', encoding='utf-8', index=False)

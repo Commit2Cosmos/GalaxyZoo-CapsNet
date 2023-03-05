@@ -15,10 +15,10 @@ DATASET = 'Kaggle'
 # LEARNING_RATE = 0.001
 BATCH_SIZE = 5
 NUM_CLASSES = 37 if DATASET == 'Kaggle' else 6
-NUM_EPOCHS = 1
+NUM_EPOCHS = 30
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
-COLORES = 'RGB'
+COLORES = 'Grey'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
 
 #softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
