@@ -63,14 +63,13 @@ class GaussianBlurAugmentation:
 
 
 # Simard or Kaggle
-DATASET = 'Kaggle'
-PARAMS = 2
+DATASET = 'Simard'
 
 transformed_dataset = SDSSData(
 # csv_file=f'./PreparedData/{DATASET}/paths_votes_{PARAMS}.csv',
-csv_file=f'./PreparedData/{DATASET}/paths_votes_deepcaps.csv',
+csv_file=f'./PreparedData/{DATASET}/paths_votes_predictor_test.csv',
 root_dir='../Data/images_train_kaggle',     #! DON'T CHANGE
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((64,64)), transforms.Grayscale()]))
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), GaussianBlurAugmentation()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
@@ -197,4 +196,4 @@ for i in range(len(transformed_dataset)):
     print(i)
 
 
-np.save(f'./PreparedData/{DATASET}/Grey/images_deepcaps_kaggle_1', list)
+np.save(f'./PreparedData/{DATASET}/Grey/images_predictor_test', list)

@@ -57,11 +57,13 @@ if PARAMS == 6:
     #* rescaling so all label values are in set [0,1]
     minim = votes.iloc[:,1:].min()
     maxim = votes.iloc[:,1:].max()
+    # np.save('./min_max/minim_6', minim)
+    # np.save('./min_max/maxim_6', maxim)
     for i in range(1, len(votes.columns)):
         votes.iloc[:,i] = (votes.iloc[:,i] - minim[i-1]) / (maxim[i-1] - minim[i-1])
 
 
-if PARAMS == 2:
+elif PARAMS == 2:
     #* find relative error & filter accordingly
 
 

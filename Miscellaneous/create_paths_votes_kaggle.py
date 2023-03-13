@@ -5,7 +5,7 @@ import math
 
 
 #* load votes
-merged = pd.read_csv('./InitData/Kaggle/labels_train.csv')
+# merged = pd.read_csv('./InitData/Kaggle/labels_train.csv')
 
 ############# UNCOMMENT FOR 2 PARAM #################################
 
@@ -50,7 +50,10 @@ if int(sums[2]) == 0:
 else:
     raise Exception('There are artifacts in the dataset!')
 
+#* 0 -> featured; 1 -> smooth
 #####################################################################
+
+# merged = pd.read_csv('./InitData/Kaggle/labels_train.csv', usecols=[0,1,2,3])
 
 #* match labels to images 
 merged['GalaxyID'] = merged.iloc[:,0].apply(lambda x:f'{x}.jpg')
@@ -63,4 +66,4 @@ print(merged)
 
 
 #* save csv
-# merged.to_csv('./PreparedData/Kaggle/paths_votes_deepcaps.csv', encoding='utf-8', index=False)
+# merged.to_csv('./PreparedData/Kaggle/paths_votes_predictor_test.csv', encoding='utf-8', index=False)

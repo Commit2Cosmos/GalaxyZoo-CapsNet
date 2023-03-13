@@ -7,30 +7,18 @@ from torch import nn
 import numpy as np
 
 BATCH_SIZE = 1
-NUM_CLASSES = 3
+NUM_CLASSES = 6
 NUM_EPOCHS = 1
 NUM_ROUTING_ITERATIONS = 3
+DATASET = 'Simard'
+COLORES = 'Grey'
+IN_CHANNELS = 1 if COLORES == 'Grey' else 3
 
 def softmax(input, dim=1):
     transposed_input = input.transpose(dim, len(input.size()) - 1)
     softmaxed_output = F.softmax(transposed_input.contiguous().view(-1,
                                                                     transposed_input.size(-1)), dim=-1)
     return softmaxed_output.view(*transposed_input.size()).transpose(dim, len(input.size()) - 1)
-
-
-def augmentation(x, max_shift=2):
-    _, _, height, width = x.size()
-
-    h_shift, w_shift = np.random.randint(-max_shift, max_shift + 1, size=2)
-    source_height_slice = slice(max(0, h_shift), h_shift + height)
-    source_width_slice = slice(max(0, w_shift), w_shift + width)
-    target_height_slice = slice(max(0, -h_shift), -h_shift + height)
-    target_width_slice = slice(max(0, -w_shift), -w_shift + width)
-
-    shifted_image = torch.zeros(*x.size())
-    shifted_image[:, :, source_height_slice, source_width_slice] = x[:,
-                                                                     :, target_height_slice, target_width_slice]
-    return shifted_image.float()
 
 
 class CapsuleLayer(nn.Module):
@@ -60,7 +48,7 @@ class CapsuleLayer(nn.Module):
         if self.num_route_nodes != -1:
             priors = x[None, :, :, None, :] @ self.route_weights[:, None, :, :, :]
 
-            logits = Variable(torch.zeros(*priors.size())).cuda()
+            logits = torch.zeros(*priors.size()).cuda()
             for i in range(self.num_iterations):
                 probs = softmax(logits, dim=2)
                 outputs = self.squash((probs * priors).sum(dim=2, keepdim=True))
@@ -80,42 +68,51 @@ class CapsuleNet(nn.Module):
     def __init__(self):
         super(CapsuleNet, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=256, kernel_size=9, stride=1)
+        self.conv1 = nn.Conv2d(in_channels=IN_CHANNELS, out_channels=256, kernel_size=9, stride=1)
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32,
                                              kernel_size=9, stride=2)
         self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8,
                                            out_channels=16)
 
-        self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
+        # self.Linear = nn.Linear(16 * NUM_CLASSES, NUM_CLASSES)
 
     def forward(self, x, y=None):
+        # print(x.shape)
         x = F.relu(self.conv1(x), inplace=True)
+        # print(x.shape)
         x = self.primary_capsules(x)
+        # print(x.shape)
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
         x = (x ** 2).sum(dim=-1) ** 0.5
+        # print(x.shape)
         # x = self.Linear(x.view(x.size(0), -1))
 
         return x
 
 
 if __name__ == "__main__":
-
-    DATASET = 'Kaggle'
-    NUM_PARAMS = 2
-    COLOR = 'RGB'
-
+    
     model = CapsuleNet()
-    model.load_state_dict(torch.load(f'../HECResults/{DATASET}/{NUM_PARAMS}Params/{COLOR}/Epochs(4)/Epochs/epoch_200.pt'))
+
+    # print("Model's state_dict:")
+    # for param_tensor in model.state_dict():
+    #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+
+    # print("# parameters:", sum(param.numel() for param in model.parameters()))
+
+    model.load_state_dict(torch.load(f'../HECResults/Simard/6Params/Grey/Epochs(1)/epoch_30.pt'))
     model.cuda()
 
-    print("# parameters:", sum(param.numel() for param in model.parameters()))
+    #* min/max data
+    minim = np.load('./min_max/minim_6.npy')
+    maxim = np.load('./min_max/maxim_6.npy')
 
     #Image data
-    X = np.load(f'../edwardam/Data/SDSSCustomData.npy')
+    X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_2.npy')
 
     data = torch.from_numpy(X).float()
     # data = augmentation(data.float())
-    print(data.shape)
+    # print(data.shape[0])
     
     #di is the number of images that are predicted at one time.
     di=2
@@ -123,17 +120,17 @@ if __name__ == "__main__":
 
     CapsPred = []
     #range must be the size of the dataset divided by di
-    for i in range(0,12820):
+    for i in range(0, int(data.shape[0]/di)):
         i*=di
         #print(i, I*di)
-        #I+=1	
         print(I*di)
         datasample = data[i:I*di]
         datasamplecuda = datasample.cuda()
         Prediction = model(datasamplecuda)
         Prednpy = Prediction.cpu().detach().numpy()
-        print(Prednpy)      
-        CapsPred.append(Prednpy)
+        
+        print(Prednpy)
+        # CapsPred.append(Prednpy)
         I+=1
 
-    np.save('../edwardam/Output/RGBCapsPredict_3class', CapsPred)
+    np.save('./Results/Preds/preds', CapsPred)
