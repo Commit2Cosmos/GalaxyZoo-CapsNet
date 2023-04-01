@@ -93,66 +93,55 @@ if __name__ == "__main__":
     
     model = CapsuleNet()
 
-    # print("Model's state_dict:")
-    # for param_tensor in model.state_dict():
-    #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-
-    # print("# parameters:", sum(param.numel() for param in model.parameters()))
-
-    model.load_state_dict(torch.load(f'../HECResults/{DATASET}/2Params/Grey/Epochs(1)/Epochs/epoch_200.pt'))
+    model.load_state_dict(torch.load(f'../HECResults/{DATASET}/2Params/{COLORES}/Epochs(4)/Epochs/epoch_200.pt'))
     model.cuda()
 
     #* Image data
-    X = np.load(f'./PreparedData/Kaggle/{COLORES}/images_predictor_test.npy')
-
-    #* Real labels
-    # import pandas as pd
-    # Y = pd.read_csv(f'./PreparedData/Kaggle/paths_votes_predictor_test.csv')
+    X = np.load(f'./ColorMass/images/images_cm_grey.npy')
 
     data = torch.from_numpy(X).float()
 
-    CapsPred = []
-
     #* show images ###########
-    import matplotlib.pyplot as plt
-    from torchvision import transforms
-    toPIL = transforms.ToPILImage()
+    # import matplotlib.pyplot as plt
+    # from torchvision import transforms
+    # toPIL = transforms.ToPILImage()
 
-    samples = 6
-    starting_index = 30
+    # samples = 6
+    # starting_index = 30
 
-    fig, axs = plt.subplots(1, samples, figsize=(10,7))
-    fig.subplots_adjust(wspace=0.1, hspace=0.0)
-    axs = axs.ravel()
+    # fig, axs = plt.subplots(1, samples, figsize=(10,7))
+    # fig.subplots_adjust(wspace=0.1, hspace=0.0)
+    # axs = axs.ravel()
 
-    toPIL = transforms.ToPILImage()
+    # toPIL = transforms.ToPILImage()
 
-    for i in range(starting_index, starting_index + samples):
-        original = data[i]
-        ii = (i-starting_index)
+    # for i in range(starting_index, starting_index + samples):
+    #     original = data[i]
+    #     ii = (i-starting_index)
 
-        axs[ii].imshow(toPIL(original))
-        axs[ii].axis('off')
+    #     axs[ii].imshow(toPIL(original))
+    #     axs[ii].axis('off')
 
-    plt.show()
-    #*############################
+    # plt.show()
+    #* ############################
 
+    CapsPred = []
     I=1
 
     for i in range(0, int(data.shape[0]/BATCH_SIZE)):
         i*=BATCH_SIZE
-        # print(I*BATCH_SIZE-2)
         datasample = data[i:I*BATCH_SIZE]
         datasamplecuda = datasample.cuda()
         Prediction = model(datasamplecuda)
         Prednpy = Prediction.cpu().detach().numpy()
+        print(I*BATCH_SIZE-2)
 
         for i in range(BATCH_SIZE):
-            pred = 0 if Prednpy[i][0] < 0.5 else 1
+            # pred = 0 if Prednpy[i][0] < 0.8 else 1
+            pred = Prednpy[i][0]
             print(pred)
-            # print(Prednpy[i])
-            # print('True: ' + str(Y.iloc[I+i-1,1]))
+            CapsPred.append(pred)
         
         I+=1
 
-    # np.save('./Results/Preds/preds', CapsPred)
+    # np.save(f'./ColorMass/preds/preds_kaggle_grey', CapsPred)

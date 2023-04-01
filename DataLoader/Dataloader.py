@@ -63,13 +63,13 @@ class GaussianBlurAugmentation:
 
 
 # Simard or Kaggle
-DATASET = 'Simard'
+# DATASET = 'Simard'
 
 transformed_dataset = SDSSData(
-# csv_file=f'./PreparedData/{DATASET}/paths_votes_{PARAMS}.csv',
-csv_file=f'./PreparedData/{DATASET}/paths_votes_predictor_test.csv',
+csv_file=f'./PreparedData/Kaggle/paths_votes_deepcaps.csv',
+# csv_file=f'./ColorMass/color_mass.csv',
 root_dir='../Data/images_train_kaggle',     #! DON'T CHANGE
-transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale()]))
+transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((64,64))]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), transforms.Grayscale(num_output_channels=1), transforms.ToPILImage()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72)), GaussianBlurAugmentation()]))
 # transform=transforms.Compose([transforms.ToTensor(), transforms.CenterCrop((216,216)), transforms.Resize((72,72))]))
@@ -79,19 +79,22 @@ toPIL = transforms.ToPILImage()
 
 
 #*#######  VIEW 4 IMAGES FROM DATASET  ############
-# image_index = 20
-# for i in range(image_index, image_index+5):
-#     sample = transformed_dataset[i]
-#     sample = torch.squeeze(sample)
-#     # print(sample.shape)
-#     sample = toPIL(sample)
+image_index = 20
+for i in range(image_index, image_index+5):
+    sample = transformed_dataset[i]
+    sample = torch.squeeze(sample)
+    # print(sample.shape)
+    sample = toPIL(sample)
 
-#     ax = plt.subplot(1, 4, i+1)
-#     plt.tight_layout()
-#     ax.set_title('Sample {}'.format(i+1))
-#     ax.axis('off')
-#     plt.imshow(sample)
-# plt.show()
+    ax = plt.subplot(1, 4, i+1)
+    plt.tight_layout()
+    ax.set_title('Sample {}'.format(i+1))
+    ax.axis('off')
+    plt.imshow(sample)
+plt.show()
+
+
+
 
 #* PCA on 1 image
 # NUM_COLORES = 3
@@ -188,12 +191,13 @@ toPIL = transforms.ToPILImage()
 
 
 
-list = []
-for i in range(len(transformed_dataset)):
-    images = transformed_dataset[i]
-    npimages = np.array(images)
-    list.append(npimages)
-    print(i)
+# list = []
+# for i in range(len(transformed_dataset)):
+#     images = transformed_dataset[i]
+#     npimages = np.array(images)
+#     list.append(npimages)
+#     print(i)
 
 
-np.save(f'./PreparedData/{DATASET}/Grey/images_predictor_test', list)
+# # np.save(f'./ColorMass/images/images_cm_grey_64', list)
+# np.save(f'./PreparedData/Kaggle/RGB/images_deepcaps_kaggle_rgb', list)

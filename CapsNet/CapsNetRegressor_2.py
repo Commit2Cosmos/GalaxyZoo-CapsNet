@@ -15,16 +15,17 @@ from torch import nn
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-BATCH_SIZE = 20
+BATCH_SIZE = 5
 LEARNING_RATE = 0.001
-IMAGE_SIZE = 64
+IMAGE_SIZE = 72
 NUM_CLASSES = 2
 NUM_EPOCHS = 200
+
 NUM_ROUTING_ITERATIONS = 3
 # Grey || RGB
 COLORES = 'Grey'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
-DATASET = 'Simard'
+DATASET = 'Kaggle'
 
 	
 # softmax layer which converts arbitary outputs of neural network into an exponetially normalized probability.
@@ -94,7 +95,7 @@ class CapsuleNet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=IN_CHANNELS, out_channels=256, kernel_size=9, stride=1)
         self.primary_capsules = CapsuleLayer(num_capsules=8, num_route_nodes=-1, in_channels=256, out_channels=32, kernel_size=9, stride=2)
-        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 24 * 24, in_channels=8, out_channels=16)
+        self.digit_capsules = CapsuleLayer(num_capsules=NUM_CLASSES, num_route_nodes=32 * 28 * 28, in_channels=8, out_channels=16)
 
         self.decoder = nn.Sequential(
             nn.Linear(16 * NUM_CLASSES, 512),
@@ -111,7 +112,9 @@ class CapsuleNet(nn.Module):
         x = self.digit_capsules(x).squeeze().transpose(0, 1)
 
         classes = (x ** 2).sum(dim=-1) ** 0.5
-        classes = F.softmax(classes, dim=-1)
+        # print(classes)
+        # classes_test = F.softmax(classes, dim=-1)
+        # print(classes_test)
 
         if y is None:
             # In all batches, get the most active capsule.
@@ -169,11 +172,11 @@ if __name__ == "__main__":
 
     def get_iterator(mode):
         # Load Images
-        # X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_2.npy')
-        X = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/images_64x64_2.npy")
+        X = np.load(f'./PreparedData/{DATASET}/{COLORES}/images_2.npy')
+        # X = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/images_2.npy")
         # Load corresponding labels
-        # y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_2.npy')
-        y = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/votes_64x64_2.npy")
+        y = np.load(f'./PreparedData/{DATASET}/{COLORES}/votes_2.npy')
+        # y = np.load(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/PreparedData/votes_2.npy")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         if mode:
@@ -217,6 +220,8 @@ if __name__ == "__main__":
 
     def on_forward(state):
         meter_accuracy.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
+        print(state['output'].data)
+        print(state['sample'][1].type(torch.LongTensor).reshape(-1))
         confusion_meter.add(state['output'].data, state['sample'][1].type(torch.LongTensor).reshape(-1))
 
         new_output = state['output'][:,1:].reshape(-1).data.cpu()
@@ -244,7 +249,7 @@ if __name__ == "__main__":
 
         if state['epoch'] % 50 == 0 or state['epoch'] == 10:
             # torch.save(model.state_dict(), './Results/Kaggle/Epochs_' + COLORES + '_2/Epochs/epoch_%d.pt' % state['epoch'])
-            torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs_64x64/Epochs/epoch_%d.pt' % state['epoch'])
+            torch.save(model.state_dict(), '/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Epochs/epoch_%d.pt' % state['epoch'])
 
         print('[Epoch %d] Testing Loss: %.4f (Accuracy: %.2f%%)' % (state['epoch'], meter_loss.value()[0], meter_accuracy.value()[0]))
 
@@ -269,8 +274,8 @@ if __name__ == "__main__":
             # np.save('./Results/' + DATASET + '/Epochs_' + COLORES + '_2/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
             # np.save('./Results/' + DATASET + '/Epochs_' + COLORES + '_2/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
     
-            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs_64x64/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
-            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs_64x64/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
+            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Truth/epoch_{}'.format(state['epoch']), ground_truth, allow_pickle=True)
+            np.save('/storage/hpc/37/belov/' + DATASET + '/2Params/' + COLORES + '/Epochs/Recon/epoch_{}'.format(state['epoch']), reconstruction, allow_pickle=True)
     
     engine.hooks['on_sample'] = on_sample
     engine.hooks['on_forward'] = on_forward
@@ -295,10 +300,10 @@ if __name__ == "__main__":
     # np.save(f"./Results/{DATASET}/Acc/r2/train_r2", train_r2, allow_pickle=True)
     # np.save(f"./Results/{DATASET}/Acc/r2/test_r2", test_r2, allow_pickle=True)
     
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses_64x64/train_losses", train_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses_64x64/test_losses", test_losses, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc_64x64/acc/train_acc", train_accs, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc_64x64/acc/test_acc", test_accs, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc_64x64/confs/confs", confs, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc_64x64/r2/train_r2", train_r2, allow_pickle=True)
-    np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc_64x64/r2/test_r2", test_r2, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses/train_losses", train_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Losses/test_losses", test_losses, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/acc/train_acc", train_accs, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/acc/test_acc", test_accs, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/confs/confs", confs, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/r2/train_r2", train_r2, allow_pickle=True)
+    # np.save(f"/storage/hpc/37/belov/{DATASET}/2Params/{COLORES}/Acc/r2/test_r2", test_r2, allow_pickle=True)

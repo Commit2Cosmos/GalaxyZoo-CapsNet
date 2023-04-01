@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 EPOCH = 100
 
 # Y=np.load(f'\\Users\\Anton\\Desktop\\!Uni\\Phys4xx\\!Masters451\\Network\\HECResults\\Kaggle\\2Params\\Epochs\\Truth\\epoch_{EPOCH}.npy')
-Z=np.load(f'\\Users\\Anton\\Desktop\\!Uni\\Phys4xx\\!Masters451\\Network\\HECResults\\Kaggle\\2Params\\Epochs\\Recon\\epoch_{EPOCH}.npy', allow_pickle=True)
-
+Z=np.load(f'../HECResults/Kaggle/2Params/RGB/Epochs(4)/Recon/epoch_{EPOCH}.npy', allow_pickle=True)
+print(Z.shape)
 
 # Original images
 # for i, el in enumerate(Y):
@@ -19,14 +19,14 @@ Z=np.load(f'\\Users\\Anton\\Desktop\\!Uni\\Phys4xx\\!Masters451\\Network\\HECRes
 # plt.suptitle('Original Images')  
 # plt.show()
 
-#Reconstructed images
-for i, el in enumerate(Z):
-    #moving axis to use plt: i.e [4,100,100] to [100,100,4]
-    array3 = np.moveaxis(Z[i], 0, -1)
-    plt.subplot(4, 5, i + 1)
-    plt.imshow(array3, cmap ='gray')
-    plt.axis('off')
-    #plt.subplots_adjust(wspace=0, hspace=0) 
+#* Reconstructed images
+# for i, el in enumerate(Z):
+#     #moving axis to use plt: i.e [4,100,100] to [100,100,4]
+#     array3 = np.moveaxis(Z[i], 0, -1)
+#     plt.subplot(4, 5, i + 1)
+#     plt.imshow(array3, cmap ='gray')
+#     plt.axis('off')
+#     #plt.subplots_adjust(wspace=0, hspace=0) 
 
-plt.suptitle(f'Reconstruction after {EPOCH} epochs')    
-plt.show()
+# plt.suptitle(f'Reconstruction after {EPOCH} epochs')    
+# plt.show()

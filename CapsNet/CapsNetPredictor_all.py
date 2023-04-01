@@ -11,7 +11,7 @@ NUM_CLASSES = 6
 NUM_EPOCHS = 1
 NUM_ROUTING_ITERATIONS = 3
 DATASET = 'Simard'
-COLORES = 'Grey'
+COLORES = 'RGB'
 IN_CHANNELS = 1 if COLORES == 'Grey' else 3
 
 def softmax(input, dim=1):
