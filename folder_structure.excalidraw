@@ -1,0 +1,48 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "type": "text",
+      "version": 455,
+      "versionNonce": 113142271,
+      "isDeleted": false,
+      "id": "1xziwtlq33aPfkiC5oTwE",
+      "fillStyle": "hachure",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "angle": 0,
+      "x": 293.33333333333337,
+      "y": 128.77777777777777,
+      "strokeColor": "#000000",
+      "backgroundColor": "transparent",
+      "width": 408.45147705078125,
+      "height": 845,
+      "seed": 1514845598,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "boundElements": [],
+      "updated": 1699734060637,
+      "link": null,
+      "locked": false,
+      "fontSize": 28.08826049131333,
+      "fontFamily": 1,
+      "text": "CapsNet\nInitData\n        solutions\n        images\nDataAnalysis\nDataLoader\nPreparedData\n        paths_votes\n        images\n        votes\n        \nResults\n        GZ DECaLS\n        GZ2\n            Epochs\n            Plots\n            Losses\n                Test\n                Train\n            \nResnet\nMiscellaneous\n        Create_paths_votes\n        CSV_to_NPY",
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "CapsNet\nInitData\n        solutions\n        images\nDataAnalysis\nDataLoader\nPreparedData\n        paths_votes\n        images\n        votes\n        \nResults\n        GZ DECaLS\n        GZ2\n            Epochs\n            Plots\n            Losses\n                Test\n                Train\n            \nResnet\nMiscellaneous\n        Create_paths_votes\n        CSV_to_NPY",
+      "lineHeight": 1.2534892769248556,
+      "baseline": 834
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

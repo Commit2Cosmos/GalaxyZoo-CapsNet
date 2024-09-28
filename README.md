@@ -1,4 +1,4 @@
-# GalaxyZoo_CapsNet
+# GalaxyZoo-CapsNet
 
 ## Table of contents
 * [Project Overview](#general-info)
@@ -8,7 +8,7 @@
 * [Acknowledgments](#acknowledgments)
 
 ## Project Overview
-This project investigated the relative abilities of a capsule network and residual network to reproduce the human classifications of galaxy images. This repository provides code that can process the required image data into the necessary data frame, train both models, evaluate their classification accuracies and test their abilities to reproduce well known physical results related to galaxy evolution.
+This project investigated the abilities of a CapsNet to classify galaxy images based on [Galaxy Zoo 2](https://data.galaxyzoo.org) vote fractions and [Simard et al. catalogue](https://ui.adsabs.harvard.edu/abs/2011ApJS..196...11S/abstract) structural parameters. This repository provides code that can process the required image data into the necessary data frame, train both models, evaluate their classification accuracies and test their abilities to reproduce well known physical results related to galaxy evolution.
 	
 ## Required Packages and Technologies
 The required packages for this project are:
@@ -25,26 +25,14 @@ The required packages for this project are:
 * Numpy
 * Pandas
 
-This project also used 4 CPUs and 1 Tesla V100 GPU on the Lancaster University [High End Computing (HEC) Cluster](https://answers.lancaster.ac.uk/display/ISS/High+End+Computing+%28HEC%29+help).
-	
-## Data
-All datasets used in this project can be downloaded from the following locations:
-
-* The SDSS galaxy images and their corresponding labels used can be found on [Kaggle](https://www.kaggle.com/competitions/galaxy-zoo-the-galaxy-challenge/data) which provided 61578 RGB images in total. For access to the complete labelled dataset of SDSS galaxy images refer to the [Galaxy Zoo](https://data.galaxyzoo.org/).
-
-* The higher resolution DECaLS galaxy images and their corresponding labels can be found on [Zenodo](https://zenodo.org/record/4196267#.YqiMJqHMLIU).
-
-* The sample dataset of galaxy colours and total stellar mass was taken from [Schawinski et al. 2010b](https://cdsarc.cds.unistra.fr/viz-bin/cat/J/ApJ/711/284#/browse). For the complete dataset of galaxy colours refer to [MPA-JHU](https://www.sdss.org/dr12/spectro/galaxy_mpajhu/) and [NYU VAGC](http://sdss.physics.nyu.edu/vagc/) for the complete dataset of galaxy stellar masses.
-
-* The galaxy Sersic indicies were downloaded from [Simard et al. 2011](https://cdsarc.cds.unistra.fr/viz-bin/cat/J/ApJS/196/11#/browse).
-
+This project used 4 CPUs and 1 Tesla V100 GPU on the Lancaster University [High End Computing (HEC) Cluster](https://answers.lancaster.ac.uk/display/ISS/High+End+Computing+%28HEC%29+help).
 
 
 ## Files
 ### CapsNet
-The CapsNet folder contains 3 versions of the capsule network code: ```CapsNetReconstructor.py```, ```CapsNetRegressor.py``` and ```CapsNetPredictor.py```
+The CapsNet folder contains four versions of the capsule network: ```CapsNetPredictor_2.py```, ```CapsNetPredictor_all.py.py```, ```CapsNetRegressor_2.py``` and ```CapsNetRegressor_all.py```. Each splits the dataset into a training (80%) and testing (20%) sample.
 
-```CapsNetRegressor.py``` is used to train the capsule network to predict the Galaxy Zoo vote fractions corresponding to an image. It accepts input data in the form of a tensor [Number of images, Number of colour channels, Image width, Image height] and matches each image in the tensor, by index, to the image label tensor [Number of images, Number of vote fractions]. The network uses an adam optimizer to minimize the mean squared error between the actual vote fractions and the network predicted fractions. The network will output the average value of the mean squared error across all image at each epoch, as well as saving the trained set of weights to the epoch_%d.pt file.
+```CapsNetRegressor_2.py``` is used to train the capsule network to predict the Galaxy Zoo vote fractions or structural parameters corresponding to an image. It accepts data in the form of a tensor [Number of images, Number of colour channels, Image width, Image height] and matches each image in the tensor, by index, to the image label tensor [Number of images, Number of parameters]. The network uses an Adam optimizer to minimize the mean squared error between the actual parameters and the network predicted parameters. It outputs the accuracy across all images at each epoch, as well as saves the trained set of weights to the epoch_%d.pt file.
 
 The ```CapsNetPredictor.py``` allows you to load in the pre-trained weights from the epoch_%d.pt file to predict the vote fractions corresponding to a set of input images to the network. 
 
